@@ -31,6 +31,8 @@ typedef struct {
     int funding;
     int personnel;
     int supplies;
+    int currency;
+    
 } Resources;
 
 #endif
