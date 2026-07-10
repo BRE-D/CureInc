@@ -10,8 +10,8 @@
 #define MAX_EVENTS       8
 #define MAX_SKILLS       16
 
-#define SCREEN_WIDTH     1280
-#define SCREEN_HEIGHT    720
+#define SCREEN_WIDTH     1920
+#define SCREEN_HEIGHT    1080
 
 #define DEFAULT_DAY_LENGTH  3.0f   /* real-time seconds per simulated day */
 

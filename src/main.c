@@ -22,7 +22,7 @@ int main(void)
             ClearBackground((Color){ 15, 15, 25, 255 });
 
             DrawText("CureInc", 100, 100, 60, WHITE);
-            DrawText("Basic Screen", 100, 180, 24,
+            DrawText("Basic Window", 100, 180, 24,
                      (Color){ 100, 220, 100, 255 });
 
             DrawText("Press ESC to exit", 100, 240, 20,
