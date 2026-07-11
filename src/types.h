@@ -5,13 +5,12 @@
    Constants
    ---------------------------------------------------------------- */
 
-#define MAX_REGIONS 8
-#define MAX_EVENTS 8
-#define MAX_SKILLS 16
+#define MAX_REGIONS      8
+#define MAX_EVENTS       8
+#define MAX_SKILLS       16
 
-#define SCREEN_WIDTH 1920
-#define SCREEN_HEIGHT 1080
-
+#define SCREEN_WIDTH     1366
+#define SCREEN_HEIGHT    768
 
 #define DEFAULT_DAY_LENGTH  3.0f   /* real-time seconds per simulated day */
 #define GLOBAL_MIXING_RATE  0.02f  /* how strongly infected regions leak into others, per day */
@@ -30,11 +29,19 @@ typedef enum {
 
 /* Infection severity tier of a region — used for colour coding */
 typedef enum {
-  REGION_CLEAN = 0,
-  REGION_INFECTED,
-  REGION_CRITICAL,
-  REGION_DEVASTATED
+    REGION_CLEAN = 0,
+    REGION_INFECTED,
+    REGION_CRITICAL,
+    REGION_DEVASTATED
 } RegionState;
+
+/* Stages of the cure development pipeline */
+typedef enum {
+    PHASE_DISCOVERY = 0,   /* identify and sequence the pathogen */
+    PHASE_TRIALS,          /* clinical safety and efficacy testing */
+    PHASE_PRODUCTION,      /* mass manufacturing of doses */
+    PHASE_DISTRIBUTION     /* global rollout and vaccination */
+} ResearchPhase;
 
 /* Climate zone of a region — determines which mutation traits
    give the virus a spread bonus there */
@@ -43,14 +50,6 @@ typedef enum {
     CLIMATE_COLD,
     CLIMATE_HOT
 } RegionClimate;
-
-/* Stages of the cure development pipeline */
-typedef enum {
-  PHASE_DISCOVERY = 0, /* identify and sequence the pathogen */
-  PHASE_TRIALS,        /* clinical safety and efficacy testing */
-  PHASE_PRODUCTION,    /* mass manufacturing of doses */
-  PHASE_DISTRIBUTION   /* global rollout and vaccination */
-} ResearchPhase;
 
 typedef enum {
   TRAIT_NONE = 0,
@@ -72,14 +71,14 @@ typedef enum {
  * Virus - biological state of the pathogen.
  */
 typedef struct {
-  float infectivity;    /* base per-tick spread rate                  */
-  float severity;       /* rate at which healthcare capacity degrades  */
-  float resistance;     /* reduces final cure effectiveness (0-1)      */
-  float mutationRate;   /* probability of acquiring a new trait daily  */
-  int activeTraits;     /* bitmask of active MutationTrait flags       */
-  float globalInfected; /* fraction of total world population infected */
-  float globalDead;     /* cumulative fraction of population dead       */
-} Virus;
+    float infectivity;      /* base per-tick spread rate                  */
+    float severity;         /* rate at which healthcare capacity degrades  */
+    float resistance;       /* reduces final cure effectiveness (0-1)      */
+    float mutationRate;     /* probability of acquiring a new trait daily  */
+    int   activeTraits;     /* bitmask of active MutationTrait flags       */
+    float globalInfected;   /* fraction of total world population infected */
+    float globalDead;       /* cumulative fraction of population dead       */
+ } Virus;
 
 /*
  * CureState - the full research and production pipeline.
@@ -127,17 +126,17 @@ typedef struct {
  * Modifiers are applied globally when the node is unlocked.
  */
 typedef struct {
-  const char *name;
-  const char *description;
-  int unlocked;
-  float cost;      /* research point cost to unlock             */
-  int prereqIndex; /* index of required prior skill (-1 = root) */
+    const char *name;
+    const char *description;
+    int         unlocked;
+    float       cost;         /* research point cost to unlock             */
+    int         prereqIndex;  /* index of required prior skill (-1 = root) */
 
-  /* Additive or multiplicative modifiers applied on unlock */
-  float researchMod;     /* multiplier to research speed              */
-  float fundingMod;      /* flat bonus added to fundingPerTick        */
-  float distributionMod; /* multiplier to vaccine distribution rate   */
-  float borderMod;       /* flat bonus added to all region borderCtrl */
+    /* Additive or multiplicative modifiers applied on unlock */
+    float researchMod;        /* multiplier to research speed              */
+    float fundingMod;         /* flat bonus added to fundingPerTick        */
+    float distributionMod;    /* multiplier to vaccine distribution rate   */
+    float borderMod;          /* flat bonus added to all region borderCtrl */
 } SkillNode;
 
 /*
@@ -145,24 +144,24 @@ typedef struct {
  * Every module receives a pointer to this struct.
  */
 typedef struct {
-  GameScreen screen;
+    GameScreen screen;
 
-  Virus virus;
-  CureState cure;
+    Virus     virus;
+    CureState cure;
 
-  Region regions[MAX_REGIONS];
+    Region    regions[MAX_REGIONS];
 
-  Event eventLog[MAX_EVENTS];
-  int eventCount;
+    Event     eventLog[MAX_EVENTS];
+    int       eventCount;
 
-  SkillNode skills[MAX_SKILLS];
-  int skillCount;
+    SkillNode skills[MAX_SKILLS];
+    int       skillCount;
 
-  int day;
-  float dayTimer;  /* accumulated real seconds within current day    */
-  float dayLength; /* real seconds per simulated day                 */
-  int paused;
-  int gameSpeed; /* simulation speed multiplier: 1, 2, or 3       */
+    int   day;
+    float dayTimer;     /* accumulated real seconds within current day    */
+    float dayLength;    /* real seconds per simulated day                 */
+    int   paused;
+    int   gameSpeed;    /* simulation speed multiplier: 1, 2, or 3       */
 } GameState;
 
 #endif /* TYPES_H */

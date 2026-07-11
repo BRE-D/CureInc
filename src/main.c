@@ -3,6 +3,7 @@
 #include "virus.h"
 #include "region.h"
 #include "cure.h"
+#include "events.h"
 
 /* ----------------------------------------------------------------
    Daily simulation step. Each function below does exactly one job;
@@ -130,15 +131,19 @@ static void reset_game(GameState *gs)
     virus_init(&gs->virus);
     region_init(gs);
     cure_init(&gs->cure);
+    events_init(gs); // Initialize events subsystem
 }
 
 int main(void)
 {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "CureInc");
     SetTargetFPS(60);
+    SetWindowPosition(0, 0);
 
     GameState state = {0};
     state.screen = SCREEN_MENU;
+
+    float eventTimer = 0.0f; // Triggers the next random event
 
     while (!WindowShouldClose())
     {
@@ -164,6 +169,16 @@ int main(void)
                         state.day++;
                         day_tick(&state, 1.0f);
                     }
+
+                    // Ticks down the event timer and spawns events in real-world seconds
+                    float realDt = GetFrameTime();
+                    eventTimer += realDt;
+                    if (eventTimer >= 5.0f)
+                    {
+                        events_trigger_random(&state);
+                        eventTimer = 0.0f;
+                    }
+                    events_update(&state, realDt);
                 }
                 if (IsKeyPressed(KEY_P)) state.paused = !state.paused;
                 break;
@@ -185,7 +200,7 @@ int main(void)
             }
             else
             {
-                // Global Info Group
+                // Global Info Group (Left Column)
                 DrawText(TextFormat("Day: %d", state.day), 100, 60, 32, WHITE);
                 DrawText(TextFormat("Global Infected: %.2f%%", state.virus.globalInfected * 100.0f),
                          100, 105, 22, (Color){ 240, 70, 70, 255 }); // Soft, vibrant red
@@ -195,7 +210,7 @@ int main(void)
                                      state.cure.globalDistributed * 100.0f, state.cure.phase),
                          100, 165, 22, (Color){ 90, 200, 250, 255 }); // Sky blue
 
-                // Larger Sub-header with a crisp Lime-Green
+                // Regional Header
                 DrawText("Regional Infected:", 100, 210, 24, (Color){ 50, 230, 120, 255 });
 
                 // Region List
@@ -203,6 +218,19 @@ int main(void)
                     DrawText(TextFormat("%s: %.1f%%", state.regions[i].name,
                                          state.regions[i].infected * 100.0f),
                              100, 250 + i * 26, 18, (Color){ 220, 225, 235, 255 }); // Off-white/Silver
+                }
+
+                // Event Log (Right Column)
+                DrawText("Latest Events:", 750, 210, 24, YELLOW);
+                int ypos = 250;
+                for (int i = 0; i < MAX_EVENTS; i++)
+                {
+                    if (state.eventLog[i].active)
+                    {
+                        DrawText(state.eventLog[i].title, 750, ypos, 20, YELLOW);
+                        DrawText(state.eventLog[i].description, 750, ypos + 24, 16, (Color){ 200, 200, 200, 255 });
+                        ypos += 64;
+                    }
                 }
 
                 if (state.paused)
