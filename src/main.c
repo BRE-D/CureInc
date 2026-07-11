@@ -1,53 +1,226 @@
 #include "raylib.h"
 #include "types.h"
 #include "virus.h"
+#include "region.h"
+#include "cure.h"
+
+/* ----------------------------------------------------------------
+   Daily simulation step. Each function below does exactly one job;
+   day_tick() just runs them in the right order.
+   ---------------------------------------------------------------- */
+
+/* Spreads infection two ways:
+   1. Within-region growth (logistic curve, needs existing infection)
+   2. Cross-region import (lets a region at 0% catch the virus from
+      other infected regions, dampened by its own border control)
+   Also applies a climate bonus if the virus has mutated a matching
+   COLD_ADAPTED / HOT_ADAPTED trait for that region's climate zone. */
+static void spread_infection(GameState *gs, float dtDays)
+{
+    Virus *v = &gs->virus;
+
+    float prevInfected[MAX_REGIONS];
+    for (int i = 0; i < MAX_REGIONS; i++)
+        prevInfected[i] = gs->regions[i].infected;
+
+    for (int i = 0; i < MAX_REGIONS; i++)
+    {
+        Region *r = &gs->regions[i];
+
+        float climateBonus = 0.0f;
+        if (r->climate == CLIMATE_COLD && virus_has_trait(v, TRAIT_COLD_ADAPTED))
+            climateBonus = 0.10f;
+        if (r->climate == CLIMATE_HOT && virus_has_trait(v, TRAIT_HOT_ADAPTED))
+            climateBonus = 0.10f;
+
+        float localInfectivity = (v->infectivity + climateBonus) * (1.0f - r->borderControl * 0.5f);
+        float dampening = 1.0f - (r->healthcareCapacity * 0.3f + r->vaccinated * 0.5f);
+        if (dampening < 0.1f) dampening = 0.1f;
+
+        float localGrowth = localInfectivity * prevInfected[i] * (1.0f - prevInfected[i])
+                             * dampening * dtDays;
+
+        float incoming = 0.0f;
+        for (int j = 0; j < MAX_REGIONS; j++)
+        {
+            if (j == i) continue;
+            incoming += prevInfected[j] * gs->regions[j].population;
+        }
+        float importPressure = GLOBAL_MIXING_RATE * (v->infectivity + climateBonus) * incoming
+                                * (1.0f - r->borderControl) * dtDays;
+
+        r->infected += localGrowth + importPressure;
+        if (r->infected > 1.0f) r->infected = 1.0f;
+        if (r->infected < 0.0f) r->infected = 0.0f;
+    }
+}
+
+/* Deaths accrue per region based on severity and local healthcare
+   quality, then roll up into one global death fraction. */
+static void apply_deaths(GameState *gs, float dtDays)
+{
+    Virus *v = &gs->virus;
+    float totalPop = 0.0f, weightedDeaths = 0.0f;
+
+    for (int i = 0; i < MAX_REGIONS; i++)
+    {
+        Region *r = &gs->regions[i];
+        float localSeverity = v->severity * (1.0f - r->healthcareCapacity * 0.5f);
+        float deaths = localSeverity * r->infected * dtDays;
+
+        totalPop       += r->population;
+        weightedDeaths += r->population * deaths;
+    }
+
+    if (totalPop > 0.0f)
+    {
+        v->globalDead += weightedDeaths / totalPop;
+        if (v->globalDead > v->globalInfected) v->globalDead = v->globalInfected;
+    }
+}
+
+/* Population calculation: globalInfected is a population-weighted
+   average across all regions, not an independently simulated number. */
+static void aggregate_global_stats(GameState *gs)
+{
+    float totalPop = 0.0f, weightedInfected = 0.0f;
+
+    for (int i = 0; i < MAX_REGIONS; i++)
+    {
+        totalPop         += gs->regions[i].population;
+        weightedInfected += gs->regions[i].population * gs->regions[i].infected;
+    }
+
+    if (totalPop > 0.0f)
+        gs->virus.globalInfected = weightedInfected / totalPop;
+}
+
+static void check_win_lose(GameState *gs)
+{
+    if (gs->virus.globalDead >= 0.50f)
+        gs->screen = SCREEN_LOSE;
+    else if (gs->cure.globalDistributed >= 1.0f)
+        gs->screen = SCREEN_WIN;
+}
+
+/* Runs once per simulated day. This is the entire "System Reacts"
+   step from the design doc. */
+static void day_tick(GameState *gs, float dtDays)
+{
+    spread_infection(gs, dtDays);
+    virus_try_mutate(&gs->virus, dtDays);
+    apply_deaths(gs, dtDays);
+    aggregate_global_stats(gs);
+    cure_update(&gs->cure, dtDays);
+    region_update_states(gs);
+    check_win_lose(gs);
+}
+
+/* Resets all simulation state for a fresh run, keeping whatever
+   screen the caller already set (so callers control the transition,
+   this function only handles the data reset). */
+static void reset_game(GameState *gs)
+{
+    GameScreen keepScreen = gs->screen;
+    *gs = (GameState){0};
+    gs->screen    = keepScreen;
+    gs->dayLength = DEFAULT_DAY_LENGTH;
+    gs->gameSpeed = 1;
+
+    virus_init(&gs->virus);
+    region_init(gs);
+    cure_init(&gs->cure);
+}
 
 int main(void)
 {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "CureInc");
     SetTargetFPS(60);
- 
-    GameState state = {0};
-    state.screen    = SCREEN_MENU;
-    state.dayLength = DEFAULT_DAY_LENGTH;
-    state.gameSpeed = 1;
 
-    Virus_Init(&state.virus);
+    GameState state = {0};
+    state.screen = SCREEN_MENU;
 
     while (!WindowShouldClose())
     {
         float dt = GetFrameTime() * state.gameSpeed;
 
-        if (!state.paused)
+        switch (state.screen)
         {
-            state.dayTimer += dt;
+            case SCREEN_MENU:
+                if (IsKeyPressed(KEY_ENTER))
+                {
+                    state.screen = SCREEN_GAME;
+                    reset_game(&state);
+                }
+                break;
 
-            if (state.dayTimer >= state.dayLength)
-            {
-                state.dayTimer -= state.dayLength;
-                state.day++;
+            case SCREEN_GAME:
+                if (!state.paused)
+                {
+                    state.dayTimer += dt;
+                    if (state.dayTimer >= state.dayLength)
+                    {
+                        state.dayTimer -= state.dayLength;
+                        state.day++;
+                        day_tick(&state, 1.0f);
+                    }
+                }
+                if (IsKeyPressed(KEY_P)) state.paused = !state.paused;
+                break;
 
-                Virus_Update(&state.virus, 1.0f);
-                Virus_TryMutate(&state.virus, 1.0f);
-            }
+            case SCREEN_WIN:
+            case SCREEN_LOSE:
+                if (IsKeyPressed(KEY_R))
+                    state.screen = SCREEN_MENU;
+                break;
         }
 
         BeginDrawing();
             ClearBackground((Color){ 15, 15, 25, 255 });
 
-            DrawText("CureInc", 100, 100, 60, WHITE);
+            if (state.screen == SCREEN_MENU)
+            {
+                DrawText("CureInc", 100, 300, 60, WHITE);
+                DrawText("Press ENTER to start", 100, 380, 24, (Color){ 160, 170, 185, 255 });
+            }
+            else
+            {
+                // Global Info Group
+                DrawText(TextFormat("Day: %d", state.day), 100, 60, 32, WHITE);
+                DrawText(TextFormat("Global Infected: %.2f%%", state.virus.globalInfected * 100.0f),
+                         100, 105, 22, (Color){ 240, 70, 70, 255 }); // Soft, vibrant red
+                DrawText(TextFormat("Global Dead: %.2f%%", state.virus.globalDead * 100.0f),
+                         100, 135, 22, (Color){ 160, 170, 185, 255 }); // Slate gray/blue
+                DrawText(TextFormat("Cure: %.0f%% distributed (phase %d)",
+                                     state.cure.globalDistributed * 100.0f, state.cure.phase),
+                         100, 165, 22, (Color){ 90, 200, 250, 255 }); // Sky blue
 
-            DrawText(TextFormat("Day: %d", state.day),
-                     100, 200, 30, WHITE);
+                // Larger Sub-header with a crisp Lime-Green
+                DrawText("Regional Infected:", 100, 210, 24, (Color){ 50, 230, 120, 255 });
 
-            DrawText(TextFormat("Infected: %.2f%%", state.virus.globalInfected * 100.0f),
-                     100, 240, 24, RED);
+                // Region List
+                for (int i = 0; i < MAX_REGIONS; i++) {
+                    DrawText(TextFormat("%s: %.1f%%", state.regions[i].name,
+                                         state.regions[i].infected * 100.0f),
+                             100, 250 + i * 26, 18, (Color){ 220, 225, 235, 255 }); // Off-white/Silver
+                }
 
-            DrawText(TextFormat("Dead: %.2f%%", state.virus.globalDead * 100.0f),
-                     100, 270, 24, GRAY);
+                if (state.paused)
+                    DrawText("PAUSED (P to resume)", 100, 480, 22, YELLOW);
 
-            DrawText("Press ESC to exit", 100, 340, 20,
-                     (Color){ 150, 150, 150, 255 });
+                if (state.screen == SCREEN_LOSE)
+                {
+                    DrawText("HUMANITY HAS FALLEN", 100, 540, 40, (Color){ 255, 30, 30, 255 });
+                    DrawText("Press R to return to menu", 100, 590, 20, (Color){ 160, 170, 185, 255 });
+                }
+                else if (state.screen == SCREEN_WIN)
+                {
+                    DrawText("CURE DISTRIBUTED - HUMANITY SAVED", 100, 540, 40, (Color){ 50, 230, 120, 255 });
+                    DrawText("Press R to return to menu", 100, 590, 20, (Color){ 160, 170, 185, 255 });
+                }
+
+                DrawText("Press ESC to exit", 100, 1000, 20, (Color){ 90, 95, 110, 255 }); // Faded status
+            }
         EndDrawing();
     }
 

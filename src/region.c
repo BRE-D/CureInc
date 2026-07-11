@@ -20,92 +20,95 @@ void region_init(GameState *gs) {
 /* Shorthand to avoid repeating gs->regions[i] on every line */
 #define R(i) gs->regions[i]
 
-  /* --- The North (Scotland, northern England, and parts of Scandinavia (cold
-   * climate, clans, castles).) --- */
+  /* --- The North (Scotland, northern England, and parts of Scandinavia,
+   * cold climate, clans, castles) --- */
   R(0).name = "The North";
-  R(0).population = 0.25f; /* sparse, harsh cold terrain      */
+  R(0).population = 0.25f;
   R(0).infected = 0.00f;
   R(0).vaccinated = 0.00f;
-  R(0).healthcareCapacity = 0.85f; /* Scandinavia = top-tier care     */
-  R(0).publicTrust = 0.80f;        /* Nordic nations trust highly     */
-  R(0).borderControl = 0.65f;      /* strong Nordic border governance */
+  R(0).healthcareCapacity = 0.85f;
+  R(0).publicTrust = 0.80f;
+  R(0).borderControl = 0.65f;
   R(0).state = REGION_CLEAN;
+  R(0).climate = CLIMATE_COLD;
 
-  /* --- Dorne (Spain ;especially Andalusia and Moorish Iberia, with some Middle
-   * Eastern influence.) --- */
+  /* --- Dorne (Spain, especially Andalusia and Moorish Iberia, with some
+   * Middle Eastern influence) --- */
   R(1).name = "Dorne";
   R(1).population = 0.30f;
   R(1).infected = 0.00f;
   R(1).vaccinated = 0.00f;
-  R(1).healthcareCapacity = 0.68f; /* Spain ranks among Europe's best */
-  R(1).publicTrust = 0.52f;        /* moderate, varies by region      */
-  R(1).borderControl = 0.48f;      /* EU + Mediterranean crossings    */
+  R(1).healthcareCapacity = 0.68f;
+  R(1).publicTrust = 0.52f;
+  R(1).borderControl = 0.48f;
   R(1).state = REGION_CLEAN;
+  R(1).climate = CLIMATE_HOT;
 
-  /* Westeros (Primarily Britain (Great Britain), medieval Western Europe ) */
+  /* --- Westeros (Primarily Britain, medieval Western Europe) --- */
   R(2).name = "Westeros";
   R(2).population = 0.30f;
-  R(2).infected = 0.01f; /* simulation starts here          */
+  R(2).infected = 0.01f; /* simulation starts here */
   R(2).vaccinated = 0.00f;
   R(2).healthcareCapacity = 0.80f;
   R(2).publicTrust = 0.75f;
   R(2).borderControl = 0.65f;
   R(2).state = REGION_INFECTED;
+  R(2).climate = CLIMATE_TEMPERATE;
 
-  /* --- The Vale (Alpine regions such as Switzerland and Austria (mountains and
-   * isolated valleys).) --- */
+  /* --- The Vale (Alpine regions such as Switzerland and Austria) --- */
   R(3).name = "The Vale";
-  R(3).population =
-      0.15f; /* small Alpine nations, mountains limit settlement */
+  R(3).population = 0.15f;
   R(3).infected = 0.00f;
   R(3).vaccinated = 0.00f;
-  R(3).healthcareCapacity =
-      0.90f; /* Switzerland = world's best healthcare system    */
-  R(3).publicTrust = 0.85f; /* Swiss have extremely high institutional trust */
-  R(3).borderControl = 0.85f; /* mountains = near-impregnable natural barrier */
+  R(3).healthcareCapacity = 0.90f;
+  R(3).publicTrust = 0.85f;
+  R(3).borderControl = 0.85f;
   R(3).state = REGION_CLEAN;
+  R(3).climate = CLIMATE_TEMPERATE;
 
   /* --- Essos (Asia — secondary outbreak, largest pop) --- */
   R(4).name = "Essos";
-  R(4).population = 1.00f; /* baseline: most populous         */
-  R(4).infected = 0.02f;   /* dense cities accelerate spread  */
+  R(4).population = 1.00f;
+  R(4).infected = 0.02f;
   R(4).vaccinated = 0.00f;
   R(4).healthcareCapacity = 0.65f;
   R(4).publicTrust = 0.55f;
   R(4).borderControl = 0.45f;
   R(4).state = REGION_INFECTED;
+  R(4).climate = CLIMATE_HOT;
 
-  /* --- The Iron Islands (Australia/Oceania — isolated.Vikings from Scandinavia
-   * and the Norse-Gaels of the British Isles.) --- */
+  /* --- The Iron Islands (Australia/Oceania — isolated) --- */
   R(5).name = "The Iron Islands";
-  R(5).population = 0.10f; /* small, sea-faring communities   */
+  R(5).population = 0.10f;
   R(5).infected = 0.00f;
   R(5).vaccinated = 0.00f;
-  R(5).healthcareCapacity = 0.60f; /* rugged, war-culture, basic care */
-  R(5).publicTrust = 0.55f;        /* clan loyalty, distrust outsiders*/
-  R(5).borderControl = 0.80f;      /* sea = natural moat, hard to breach */
+  R(5).healthcareCapacity = 0.60f;
+  R(5).publicTrust = 0.55f;
+  R(5).borderControl = 0.80f;
   R(5).state = REGION_CLEAN;
+  R(5).climate = CLIMATE_TEMPERATE;
 
   /* --- Beyond the Wall (Antarctica — research stations only) --- */
   R(6).name = "Beyond the Wall";
-  R(6).population = 0.01f; /* Night's Watch rangers only      */
+  R(6).population = 0.01f;
   R(6).infected = 0.00f;
   R(6).vaccinated = 0.00f;
-  R(6).healthcareCapacity = 0.90f; /* controlled, isolated camps      */
+  R(6).healthcareCapacity = 0.90f;
   R(6).publicTrust = 0.95f;
-  R(6).borderControl = 0.95f; /* The Wall is a very good border  */
+  R(6).borderControl = 0.95f;
   R(6).state = REGION_CLEAN;
+  R(6).climate = CLIMATE_COLD;
 
-  /* --- The Dothraki Sea (Eurasian Steppe (Mongols, Huns, Turkic nomads).) ---
-   */
+  /* --- The Dothraki Sea (Eurasian Steppe) --- */
   R(7).name = "The Dothraki Sea ";
-  R(7).population = 0.70f; /* vast steppe, nomadic spread     */
+  R(7).population = 0.70f;
   R(7).infected = 0.00f;
   R(7).vaccinated = 0.00f;
-  R(7).healthcareCapacity = 0.20f; /* nomadic tribes, no hospitals    */
-  R(7).publicTrust = 0.28f;        /* tribal loyalty, not institutional */
-  R(7).borderControl = 0.10f;      /* open steppe = essentially no border */
+  R(7).healthcareCapacity = 0.20f;
+  R(7).publicTrust = 0.28f;
+  R(7).borderControl = 0.10f;
   R(7).state = REGION_CLEAN;
+  R(7).climate = CLIMATE_HOT;
 
 #undef R
 }

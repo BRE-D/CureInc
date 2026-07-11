@@ -12,7 +12,9 @@
 #define SCREEN_WIDTH 1920
 #define SCREEN_HEIGHT 1080
 
-#define DEFAULT_DAY_LENGTH 3.0f /* real-time seconds per simulated day */
+
+#define DEFAULT_DAY_LENGTH  3.0f   /* real-time seconds per simulated day */
+#define GLOBAL_MIXING_RATE  0.02f  /* how strongly infected regions leak into others, per day */
 
 /* ----------------------------------------------------------------
    Enums
@@ -33,6 +35,14 @@ typedef enum {
   REGION_CRITICAL,
   REGION_DEVASTATED
 } RegionState;
+
+/* Climate zone of a region — determines which mutation traits
+   give the virus a spread bonus there */
+typedef enum {
+    CLIMATE_TEMPERATE = 0,
+    CLIMATE_COLD,
+    CLIMATE_HOT
+} RegionClimate;
 
 /* Stages of the cure development pipeline */
 typedef enum {
@@ -99,6 +109,7 @@ typedef struct {
   float publicTrust;        /* 0-1, affects how fast vaccines are taken  */
   float borderControl;      /* 0-1, slows incoming spread from neighbours*/
   RegionState state;
+  RegionClimate climate;
 } Region;
 
 /*

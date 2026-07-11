@@ -2,10 +2,10 @@
 #define VIRUS_H
 #include "types.h"
 
-void  Virus_Init(Virus *v);
-void  Virus_Update(Virus *v, float dtDays);
-void  Virus_TryMutate(Virus *v, float dtDays);
-int   Virus_HasTrait(const Virus *v, MutationTrait t);
-const char *Virus_TraitName(MutationTrait t);
+void  virus_init(Virus *v);
+void  virus_update(Virus *v, float dtDays);
+void  virus_try_mutate(Virus *v, float dtDays);
+int   virus_has_trait(const Virus *v, MutationTrait t);
+const char *virus_trait_name(MutationTrait t);
 
 #endif
