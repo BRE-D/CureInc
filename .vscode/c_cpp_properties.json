@@ -1,0 +1,15 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/src",
+                "C:/raylib/raylib/src"
+            ],
+            "defines": [],
+            "cStandard": "c23",
+            "intelliSenseMode": "gcc-x64"
+        }
+    ],
+    "version": 4
+}
