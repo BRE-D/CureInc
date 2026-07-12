@@ -94,4 +94,3 @@ void events_update(GameState *gs, float delta)
         }
     }
 }
-
