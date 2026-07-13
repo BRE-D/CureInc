@@ -3,43 +3,49 @@
 
 #include "raylib.h"
 #include <stdbool.h>
-#include "types.h"
 
+// -----------------------------------------------------------------------------
+// UI STATES & GAME DATA
+// -----------------------------------------------------------------------------
+typedef enum AppScreen {
+    STATE_MAIN_MENU,
+    STATE_GAMEPLAY,
+    STATE_PAUSED,
+    STATE_GAME_OVER
+} AppScreen;
 
-//Game States structure
-typedef struct UI_GameStats
-{
-    float cure_progress;
-    float global_infection;
-    int budget;
-    int day_count;
-    int game_speed;
-} UI_GameStats;
+// Global game statistics structure
+typedef struct GameStats {
+    float cureProgress;     // Percentage (0.0f to 100.0f)
+    float globalInfection;  // Percentage (0.0f to 100.0f)
+    int budget;             // Game currency / research points
+    int dayCount;           // Number of days elapsed
+    int gameSpeed;          // 0 = Paused, 1 = Normal, 2 = Fast
+} GameStats;
 
-typedef struct UI_RegionData
-{
-    const char *name;
-    int population;
-    int infected_count;
-    float cure_research;
-    bool borders_closed;
-    bool is_selected;
-} UI_RegionData;
+// Region/Country details structure for side panel display
+typedef struct RegionData {
+    const char *name;       // Region Name (e.g., "North America")
+    int population;         // Total population
+    int infectedCount;      // Number of infected citizens
+    float cureResearch;     // Regional cure research progress %
+    bool bordersClosed;     // Status flag: borders open/closed
+    bool isSelected;        // Is this region currently open in the UI?
+} RegionData;
 
-//Functions declaration
+// -----------------------------------------------------------------------------
+// FUNCTION DECLARATIONS
+// -----------------------------------------------------------------------------
+void InitUI(void);
 
-void InitUI();
+bool DrawUIButton(Rectangle bounds, const char *text, Color baseColor, Color hoverColor);
+void DrawUIPanel(Rectangle bounds, Color background, Color border, float borderWidth);
+void DrawProgressBar(Rectangle bounds, float percentage, Color barColor, Color bgColor, const char *label);
 
-bool DrawUIbutton(Rectangle bounds, const char *text, Color base_color, Color hover_color);
-void DrawUIpanel(Rectangle bounds, Color background, Color border, float border_width);
-void Drawprogression(Rectangle bounds, float percentage, Color bar_color, Color bg_color, const char *label);
+void DrawMainMenu(AppScreen *currentState);
+void DrawGameplayHUD(AppScreen *currentState, GameStats *stats);
+void DrawPauseOverlay(AppScreen *currentState);
 
-//Screen Drawing fucntions
+void DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *stats);
 
-void DrawMainmenu(GameState *state);
-void DrawGameplayHUD(GameState *state, UI_GameStats *stats);
-void DrawPauseoverlay(GameState *state);
-
-void DrawRegionpanel(Rectangle bounds, Region *region, GameState *state);
-
-#endif
+#endif // UI_H

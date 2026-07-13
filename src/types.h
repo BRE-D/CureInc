@@ -101,14 +101,16 @@ typedef struct {
  */
 typedef struct {
   const char *name;
-  float population;         /* relative size, normalised 0-1             */
-  float infected;           /* fraction of population infected (0-1)     */
-  float vaccinated;         /* fraction of population vaccinated (0-1)   */
-  float healthcareCapacity; /* 0-1, degrades under severe infection       */
-  float publicTrust;        /* 0-1, affects how fast vaccines are taken  */
-  float borderControl;      /* 0-1, slows incoming spread from neighbours*/
+  float population;
+  float infected;
+  float vaccinated;
+  float healthcareCapacity;
+  float publicTrust;
+  float borderControl;
   RegionState state;
   RegionClimate climate;
+  float cureResearch;/* NEW: 0-100, local research investment       */
+  int bordersClosed;    /* NEW: 1 = player has locked this region down */
 } Region;
 
 /*
@@ -162,7 +164,7 @@ typedef struct {
     float dayLength;    /* real seconds per simulated day                 */
     int   paused;
     int   gameSpeed;    /* simulation speed multiplier: 1, 2, or 3       */
-    int   selectedRegionIndex; /* currently selected region index (-1 if none) */
+    int selectedRegionIndex;
 } GameState;
 
 #endif /* TYPES_H */
