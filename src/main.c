@@ -4,6 +4,8 @@
 #include "region.h"
 #include "cure.h"
 #include "ui.h"
+#include "events.h"
+#include <stdio.h>
 
 /* ---------------- virus-system simulation (unchanged) ---------------- */
 
@@ -110,14 +112,15 @@ static void reset_game(GameState *gs)
     gs->screen              = keepScreen;
     gs->dayLength           = DEFAULT_DAY_LENGTH;
     gs->gameSpeed           = 1;
-    gs->selectedRegionIndex = 2; /* Westeros: the seeded outbreak region */
+    gs->selectedRegionIndex = 2;
 
     virus_init(&gs->virus);
     region_init(gs);
     cure_init(&gs->cure);
+    events_init(gs);
 }
 
-/* ---------------- main: your sim + her UI, bridged ---------------- */
+/* ---------------- main ---------------- */
 
 int main(void)
 {
@@ -129,9 +132,10 @@ int main(void)
     state.screen              = SCREEN_MENU;
     state.selectedRegionIndex = 2;
 
-    AppScreen appScreen = STATE_MAIN_MENU; /* her UI-flow enum drives what's drawn */
-    GameStats stats     = {0};             /* her struct, mirrored from `state` each frame */
-    RegionData activeRegion = {0};         /* her struct, mirrored from state.regions[selected] */
+    AppScreen appScreen  = STATE_MAIN_MENU;
+    GameStats stats      = {0};
+    RegionData activeRegion = {0};
+    int savedSpeed       = 1;   /* remembers speed across pause/unpause */
 
     Rectangle regionClickTarget = { 400, 300, 120, 40 };
 
@@ -148,20 +152,30 @@ int main(void)
                 state.dayTimer -= state.dayLength;
                 state.day++;
                 day_tick(&state, 1.0f);
+
+                /* trigger a random event every 7 days */
+                if (state.day % 7 == 0)
+                    events_trigger_random(&state);
             }
+            events_update(&state, dt);
         }
 
-        /* mirror real sim data -> her UI-facing structs */
+        /* mirror real sim data -> UI-facing structs */
         Region *sel = &state.regions[state.selectedRegionIndex];
 
         stats.cureProgress    = state.cure.researchProgress;
         stats.globalInfection = state.virus.globalInfected * 100.0f;
         stats.budget          = (int)state.cure.funding;
         stats.dayCount        = state.day;
-        stats.gameSpeed       = state.paused ? 0 : state.gameSpeed;
+
+        /* speed: show 0 when paused, otherwise show real speed */
+        if (state.paused)
+            stats.gameSpeed = 0;
+        else if (appScreen == STATE_GAMEPLAY)
+            stats.gameSpeed = state.gameSpeed;
 
         activeRegion.name          = sel->name;
-        activeRegion.population    = (int)(sel->population * 1000000.0f); /* display scale only */
+        activeRegion.population    = (int)(sel->population * 1000000.0f);
         activeRegion.infectedCount = (int)(sel->infected * activeRegion.population);
         activeRegion.cureResearch  = sel->cureResearch;
         activeRegion.bordersClosed = sel->bordersClosed;
@@ -178,6 +192,7 @@ int main(void)
                     {
                         state.screen = SCREEN_GAME;
                         reset_game(&state);
+                        savedSpeed = 1;
                         activeRegion.isSelected = false;
                     }
                     break;
@@ -195,10 +210,27 @@ int main(void)
                     if (appScreen == STATE_GAMEPLAY && hovered && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
                         activeRegion.isSelected = true;
 
-                    /* TEMP: cycle the placeholder node through all 8 real regions
-                       until the real world map exists */
                     if (appScreen == STATE_GAMEPLAY && IsKeyPressed(KEY_TAB))
                         state.selectedRegionIndex = (state.selectedRegionIndex + 1) % MAX_REGIONS;
+
+                    /* draw active event notifications at bottom of screen */
+                    int eventY = SCREEN_HEIGHT - 40;
+                    for (int i = 0; i < MAX_EVENTS; i++)
+                    {
+                        if (state.eventLog[i].active)
+                        {
+                            Rectangle evtBox = { 20, (float)eventY, 560, 30 };
+                            DrawRectangleRec(evtBox, Fade(DARKBLUE, 0.85f));
+                            DrawRectangleLinesEx(evtBox, 1.5f, BLUE);
+
+                            char evtText[256];
+                            snprintf(evtText, sizeof(evtText), "[!] %s: %s",
+                                     state.eventLog[i].title,
+                                     state.eventLog[i].description);
+                            DrawText(evtText, 28, eventY + 8, 13, WHITE);
+                            eventY -= 38;
+                        }
+                    }
 
                     DrawGameplayHUD(&appScreen, &stats);
 
@@ -218,7 +250,10 @@ int main(void)
 
                     Rectangle menuBtn = { (float)(SCREEN_WIDTH - 200) / 2, 420, 200, 50 };
                     if (DrawUIButton(menuBtn, "MAIN MENU", BLUE, SKYBLUE))
-                        appScreen = STATE_MAIN_MENU;
+                    {
+                        appScreen    = STATE_MAIN_MENU;
+                        state.screen = SCREEN_MENU;
+                    }
                     break;
                 }
 
@@ -226,10 +261,22 @@ int main(void)
             }
         EndDrawing();
 
-        /* write player actions from the panel back into the real sim */
+        /* write player actions back into the real sim */
         state.cure.funding = (float)stats.budget;
         sel->cureResearch  = activeRegion.cureResearch;
         sel->bordersClosed = activeRegion.bordersClosed;
+
+        /* sync speed: save it when > 0, restore it when unpausing */
+        if (stats.gameSpeed > 0)
+        {
+            savedSpeed      = stats.gameSpeed;
+            state.gameSpeed = stats.gameSpeed;
+        }
+        else if (!state.paused)
+        {
+            state.gameSpeed = savedSpeed;
+            stats.gameSpeed = savedSpeed;
+        }
 
         /* sync sim win/lose into UI flow */
         if ((state.screen == SCREEN_WIN || state.screen == SCREEN_LOSE) && appScreen != STATE_GAME_OVER)
