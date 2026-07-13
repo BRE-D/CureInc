@@ -5,12 +5,8 @@
 #include "cure.h"
 #include "events.h"
 
-/* ----------------------------------------------------------------
-   Daily simulation step. Each function below does exactly one job;
-   day_tick() just runs them in the right order.
-   ---------------------------------------------------------------- */
 
-/* Spreads infection two ways:
+/* Infection spreads in two ways:
    1. Within-region growth (logistic curve, needs existing infection)
    2. Cross-region import (lets a region at 0% catch the virus from
       other infected regions, dampened by its own border control)
@@ -127,6 +123,7 @@ static void reset_game(GameState *gs)
     gs->screen    = keepScreen;
     gs->dayLength = DEFAULT_DAY_LENGTH;
     gs->gameSpeed = 1;
+    gs->selectedRegionIndex = -1;
 
     virus_init(&gs->virus);
     region_init(gs);
