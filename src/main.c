@@ -219,7 +219,7 @@ int main(void)
                     {
                         if (state.eventLog[i].active)
                         {
-                            Rectangle evtBox = { 20, (float)eventY, 560, 30 };
+                            Rectangle evtBox = { 20, (float)eventY, 1000, 46 };
                             DrawRectangleRec(evtBox, Fade(DARKBLUE, 0.85f));
                             DrawRectangleLinesEx(evtBox, 1.5f, BLUE);
 
@@ -227,8 +227,8 @@ int main(void)
                             snprintf(evtText, sizeof(evtText), "[!] %s: %s",
                                     state.eventLog[i].title,
                                     state.eventLog[i].description);
-                            DrawText(evtText, 28, eventY + 8, 13, WHITE);
-                            eventY -= 44;
+                            DrawText(evtText, 28, eventY + 13, 20, WHITE);
+                            eventY -= 54;
                         }
                     }
 
