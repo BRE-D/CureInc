@@ -162,6 +162,7 @@ typedef struct {
     float dayLength;    /* real seconds per simulated day                 */
     int   paused;
     int   gameSpeed;    /* simulation speed multiplier: 1, 2, or 3       */
+    int   selectedRegionIndex; /* currently selected region index (-1 if none) */
 } GameState;
 
 #endif /* TYPES_H */
