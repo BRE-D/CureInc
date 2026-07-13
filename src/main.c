@@ -137,7 +137,7 @@ int main(void)
     RegionData activeRegion = {0};
     int savedSpeed       = 1;   /* remembers speed across pause/unpause */
 
-    Rectangle regionClickTarget = { 400, 300, 120, 40 };
+    Rectangle regionClickTarget = { 400, 300, 200, 40 };
 
     while (!WindowShouldClose())
     {
@@ -214,7 +214,7 @@ int main(void)
                         state.selectedRegionIndex = (state.selectedRegionIndex + 1) % MAX_REGIONS;
 
                     /* draw active event notifications at bottom of screen */
-                    int eventY = SCREEN_HEIGHT - 40;
+                    int eventY = SCREEN_HEIGHT - 80;
                     for (int i = 0; i < MAX_EVENTS; i++)
                     {
                         if (state.eventLog[i].active)
@@ -225,10 +225,10 @@ int main(void)
 
                             char evtText[256];
                             snprintf(evtText, sizeof(evtText), "[!] %s: %s",
-                                     state.eventLog[i].title,
-                                     state.eventLog[i].description);
+                                    state.eventLog[i].title,
+                                    state.eventLog[i].description);
                             DrawText(evtText, 28, eventY + 8, 13, WHITE);
-                            eventY -= 38;
+                            eventY -= 44;
                         }
                     }
 

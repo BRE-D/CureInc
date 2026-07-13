@@ -46,7 +46,7 @@ static Event eventPool[POOL_SIZE] =
         "Medical Miracle", "AI-driven drug discovery accelerates trial timelines by 30%.", 0, 0 
     },
     {
-        "The North Remembers", "A cold-adapted strain has spread through isolated northern settlements undetected for weeks. Winter is coming -- and it brought a resistant variant with it.", 0, 0 
+        "Winter is coming", "A resistant, cold strain has quietly spread north for weeks", 0, 0 
     }
 };
 
