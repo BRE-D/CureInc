@@ -1,9 +1,9 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-/* ----------------------------------------------------------------
-   Constants
-   ---------------------------------------------------------------- */
+  /* 
+   All required constants
+  */
 
 #define MAX_REGIONS      8
 #define MAX_EVENTS       8
@@ -15,9 +15,10 @@
 #define DEFAULT_DAY_LENGTH  3.0f   /* real-time seconds per simulated day */
 #define GLOBAL_MIXING_RATE  0.02f  /* how strongly infected regions leak into others, per day */
 
-/* ----------------------------------------------------------------
-   Enums
-   ---------------------------------------------------------------- */
+  /* 
+   All required enums
+  */
+
 
 /* Which screen is currently active */
 typedef enum {
@@ -63,9 +64,9 @@ typedef enum {
   TRAIT_LONG_INCUBATION = (1 << 7) /* delays detection, allows silent spread */
 } MutationTrait;
 
-/* ----------------------------------------------------------------
-   Structs
-   ---------------------------------------------------------------- */
+  /* 
+   All required Structs
+  */
 
 /*
  * Virus - biological state of the pathogen.
