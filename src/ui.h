@@ -4,14 +4,13 @@
 #include "raylib.h"
 #include <stdbool.h>
 
-// -----------------------------------------------------------------------------
 // UI STATES & GAME DATA
-// -----------------------------------------------------------------------------
+
 typedef enum AppScreen {
-    STATE_MAIN_MENU,
-    STATE_GAMEPLAY,
-    STATE_PAUSED,
-    STATE_GAME_OVER
+    STATE_MAIN_MENU,    //STATE_MAIN_MENU (0): Draws the title text and the "Press Enter" splash screen.
+    STATE_GAMEPLAY,     //STATE_GAMEPLAY (1): Draws the map interface and updates timers.
+    STATE_PAUSED,       //STATE_PAUSED (2): Darkens the screen layout and halts the simulation clock.
+    STATE_GAME_OVER     //STATE_GAME_OVER (3): Draws the final victory or defeat popup message.
 } AppScreen;
 
 // Global game statistics structure

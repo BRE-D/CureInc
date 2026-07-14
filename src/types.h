@@ -147,10 +147,10 @@ typedef struct {
  * Every module receives a pointer to this struct.
  */
 typedef struct {
-    GameScreen screen;   //Keeps track of what screen the player is currently looking at
+    GameScreen screen;                //Keeps track of what screen the player is currently looking at
 
-    Virus     virus;    //Holds all the pathogen stats
-    CureState cure;     //Holds the vaccine progress
+    Virus     virus;                  //Holds all the pathogen stats
+    CureState cure;                   //Holds the vaccine progress
 
     Region    regions[MAX_REGIONS];   //This is a fixed list (array) of all our kingdoms.
     Event     eventLog[MAX_EVENTS];   /*The active list of news notifications 
@@ -163,11 +163,11 @@ typedef struct {
 
     int       skillCount;              // The total number of skills loaded into the tree.
 
-    int   day;          //The current day count of the pandemic 
-    float dayTimer;     //The countdown tracking the current day's progress (once it hits dayLength, the day ticks forward).    
-    float dayLength;    //How many real-world seconds make up one in-game day                
-    int   paused;       //A simple true/false (1 or 0) flag. If 1,our simulation freezes.
-    int   gameSpeed;    //simulation speed multiplier: 1, 2 so far  
+    int   day;                        //The current day count of the pandemic 
+    float dayTimer;                   //The countdown tracking the current day's progress (once it hits dayLength, the day ticks forward).    
+    float dayLength;                  //How many real-world seconds make up one in-game day                
+    int   paused;                     //A simple true/false (1 or 0) flag. If 1,our simulation freezes.
+    int   gameSpeed;                  //simulation speed multiplier: 1, 2 so far  
     int selectedRegionIndex;
     //Remembers which region the player has currently clicked on so the UI can display its specific information
   } GameState;

@@ -7,7 +7,6 @@
 #include "events.h"
 #include <stdio.h>
 
-/* ---------------- virus-system simulation (unchanged) ---------------- */
 
 static void spread_infection(GameState *gs, float dtDays)
 {
@@ -120,6 +119,40 @@ static void reset_game(GameState *gs)
     events_init(gs);
 }
 
+/* ---------------- screen-state translation layer ----------------
+   These two functions are the ONLY place GameScreen and AppScreen
+   ever touch each other. AppScreen is never stored persistently —
+   it's rebuilt from GameState every frame, so the two can never
+   drift out of sync the way manually-copied variables can. */
+
+static AppScreen derive_app_screen(const GameState *gs)
+{
+    if (gs->screen == SCREEN_WIN || gs->screen == SCREEN_LOSE) return STATE_GAME_OVER;
+    if (gs->screen == SCREEN_MENU) return STATE_MAIN_MENU;
+    return gs->paused ? STATE_PAUSED : STATE_GAMEPLAY;
+}
+
+static void apply_app_screen(GameState *gs, AppScreen appScreen)
+{
+    switch (appScreen)
+    {
+        case STATE_MAIN_MENU:
+            gs->screen = SCREEN_MENU;
+            gs->paused = 0;
+            break;
+        case STATE_GAMEPLAY:
+            if (gs->screen != SCREEN_GAME) { gs->screen = SCREEN_GAME; reset_game(gs); }
+            gs->paused = 0;
+            break;
+        case STATE_PAUSED:
+            gs->paused = 1;
+            break;
+        case STATE_GAME_OVER:
+            /* nothing to write back — state.screen is already WIN/LOSE */
+            break;
+    }
+}
+
 /* ---------------- main ---------------- */
 
 int main(void)
@@ -132,19 +165,18 @@ int main(void)
     state.screen              = SCREEN_MENU;
     state.selectedRegionIndex = 2;
 
-    AppScreen appScreen  = STATE_MAIN_MENU;
-    GameStats stats      = {0};
+    GameStats stats         = {0};
     RegionData activeRegion = {0};
-    int savedSpeed       = 1;   /* remembers speed across pause/unpause */
+    int savedSpeed          = 1;
 
     Rectangle regionClickTarget = { 400, 300, 200, 40 };
 
     while (!WindowShouldClose())
     {
+        AppScreen appScreen = derive_app_screen(&state);
         float dt = GetFrameTime() * state.gameSpeed;
-        state.paused = (appScreen == STATE_PAUSED);
 
-        if (appScreen == STATE_GAMEPLAY && !state.paused)
+        if (appScreen == STATE_GAMEPLAY)
         {
             state.dayTimer += dt;
             if (state.dayTimer >= state.dayLength)
@@ -153,14 +185,12 @@ int main(void)
                 state.day++;
                 day_tick(&state, 1.0f);
 
-                /* trigger a random event every 7 days */
                 if (state.day % 7 == 0)
                     events_trigger_random(&state);
             }
             events_update(&state, dt);
         }
 
-        /* mirror real sim data -> UI-facing structs */
         Region *sel = &state.regions[state.selectedRegionIndex];
 
         stats.cureProgress    = state.cure.researchProgress;
@@ -168,7 +198,6 @@ int main(void)
         stats.budget          = (int)state.cure.funding;
         stats.dayCount        = state.day;
 
-        /* speed: show 0 when paused, otherwise show real speed */
         if (state.paused)
             stats.gameSpeed = 0;
         else if (appScreen == STATE_GAMEPLAY)
@@ -185,18 +214,11 @@ int main(void)
 
             switch (appScreen)
             {
-                case STATE_MAIN_MENU: {
-                    AppScreen before = appScreen;
+                case STATE_MAIN_MENU:
                     DrawMainMenu(&appScreen);
-                    if (before == STATE_MAIN_MENU && appScreen == STATE_GAMEPLAY)
-                    {
-                        state.screen = SCREEN_GAME;
-                        reset_game(&state);
-                        savedSpeed = 1;
+                    if (appScreen == STATE_GAMEPLAY)
                         activeRegion.isSelected = false;
-                    }
                     break;
-                }
 
                 case STATE_GAMEPLAY:
                 case STATE_PAUSED: {
@@ -213,7 +235,6 @@ int main(void)
                     if (appScreen == STATE_GAMEPLAY && IsKeyPressed(KEY_TAB))
                         state.selectedRegionIndex = (state.selectedRegionIndex + 1) % MAX_REGIONS;
 
-                    /* draw active event notifications at bottom of screen */
                     int eventY = SCREEN_HEIGHT - 80;
                     for (int i = 0; i < MAX_EVENTS; i++)
                     {
@@ -250,10 +271,7 @@ int main(void)
 
                     Rectangle menuBtn = { (float)(SCREEN_WIDTH - 200) / 2, 420, 200, 50 };
                     if (DrawUIButton(menuBtn, "MAIN MENU", BLUE, SKYBLUE))
-                    {
-                        appScreen    = STATE_MAIN_MENU;
-                        state.screen = SCREEN_MENU;
-                    }
+                        appScreen = STATE_MAIN_MENU;
                     break;
                 }
 
@@ -261,12 +279,10 @@ int main(void)
             }
         EndDrawing();
 
-        /* write player actions back into the real sim */
         state.cure.funding = (float)stats.budget;
         sel->cureResearch  = activeRegion.cureResearch;
         sel->bordersClosed = activeRegion.bordersClosed;
 
-        /* sync speed: save it when > 0, restore it when unpausing */
         if (stats.gameSpeed > 0)
         {
             savedSpeed      = stats.gameSpeed;
@@ -275,12 +291,9 @@ int main(void)
         else if (!state.paused)
         {
             state.gameSpeed = savedSpeed;
-            stats.gameSpeed = savedSpeed;
         }
 
-        /* sync sim win/lose into UI flow */
-        if ((state.screen == SCREEN_WIN || state.screen == SCREEN_LOSE) && appScreen != STATE_GAME_OVER)
-            appScreen = STATE_GAME_OVER;
+        apply_app_screen(&state, appScreen);
     }
 
     CloseWindow();
