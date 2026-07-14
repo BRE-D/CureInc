@@ -7,7 +7,7 @@
 #include "events.h"
 #include <stdio.h>
 
-/* ---------------- virus-system simulation ---------------- */
+// virus-system simulation 
 
 static float region_effective_healthcare(const Region *r)
 {
@@ -114,7 +114,7 @@ static void reset_game(GameState *gs)
     events_init(gs);
 }
 
-/* ---------------- UI <-> sim data bridge ---------------- */
+//UI <-> sim data bridge 
 
 static void pull_ui_snapshot(const GameState *gs, GameStats *stats, RegionData *rd)
 {
@@ -147,7 +147,7 @@ static void push_ui_actions(GameState *gs, const GameStats *stats, const RegionD
     else if (gs->screen != SCREEN_PAUSED) { gs->gameSpeed = *savedSpeed; }
 }
 
-/* ---------------- drawing helpers ---------------- */
+//drawing helpers
 
 static void draw_event_log(const GameState *gs)
 {
@@ -203,7 +203,7 @@ static void draw_game_over(GameState *gs)
         gs->screen = SCREEN_MENU;
 }
 
-/* ---------------- main ---------------- */
+//main
 
 int main(void)
 {
