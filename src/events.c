@@ -83,13 +83,14 @@ void events_update(GameState *gs, float delta)
 {
     for (int i = 0; i < MAX_EVENTS; i++)
     {
-        if (gs->eventLog[i].active)
+        if (gs->eventLog[i].active) // Only update remaining showtime of the active elements in the eventlog
         {
-            gs->eventLog[i].timer -= delta;
-            if (gs->eventLog[i].timer < 0)
+            gs->eventLog[i].timer -= delta; // Subtract a microscopic slice of time (e.g., 0.016s)
+            
+            if (gs->eventLog[i].timer <= 0)  // Has the countdown reached 0?
             {
-                gs->eventLog[i].active = 0;
-                gs->eventCount --;
+                gs->eventLog[i].active = 0; // Turn it OFF (stops drawing)
+                gs->eventCount--;           // Subtract from active event count
             }
         }
     }
