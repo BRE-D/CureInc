@@ -52,7 +52,7 @@ void DrawProgressBar(Rectangle bounds, float percentage, Color barColor, Color b
     DrawText(buffer, (int)textX, (int)textY, fontSize, WHITE);
 }
 
-void DrawMainMenu(AppScreen *currentState) {
+void DrawMainMenu(GameScreen *currentState) {
     int screenWidth = GetScreenWidth();
 
     const char *title = "CURE INC.";
@@ -61,11 +61,11 @@ void DrawMainMenu(AppScreen *currentState) {
 
     Rectangle startBtn = { (float)(screenWidth - 200) / 2, 300, 200, 50 };
     if (DrawUIButton(startBtn, "START GAME", BLUE, SKYBLUE)) {
-        *currentState = STATE_GAMEPLAY;
+        *currentState = SCREEN_GAME;
     }
 }
 
-void DrawGameplayHUD(AppScreen *currentState, GameStats *stats) {
+void DrawGameplayHUD(GameScreen *currentState, GameStats *stats) {
     int screenWidth = GetScreenWidth();
 
     Rectangle headerBar = { 0, 0, (float)screenWidth, 60 };
@@ -97,11 +97,11 @@ void DrawGameplayHUD(AppScreen *currentState, GameStats *stats) {
     }
     if (DrawUIButton(btnPause, "||", stats->gameSpeed == 0 ? MAROON : GRAY, RED)) {
         stats->gameSpeed = 0;
-        *currentState = STATE_PAUSED;
+        *currentState = SCREEN_PAUSED;
     }
 }
 
-void DrawPauseOverlay(AppScreen *currentState) {
+void DrawPauseOverlay(GameScreen *currentState) {
     int screenWidth = GetScreenWidth();
     int screenHeight = GetScreenHeight();
 
@@ -114,12 +114,12 @@ void DrawPauseOverlay(AppScreen *currentState) {
 
     Rectangle resumeBtn = { panel.x + 50, panel.y + 70, 200, 40 };
     if (DrawUIButton(resumeBtn, "RESUME", GREEN, LIME)) {
-        *currentState = STATE_GAMEPLAY;
+        *currentState = SCREEN_GAME;
     }
 
     Rectangle menuBtn = { panel.x + 50, panel.y + 120, 200, 40 };
     if (DrawUIButton(menuBtn, "MAIN MENU", RED, MAROON)) {
-        *currentState = STATE_MAIN_MENU;
+        *currentState = SCREEN_MENU;
     }
 }
 

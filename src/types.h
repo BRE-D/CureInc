@@ -19,11 +19,14 @@
    All required enums
   */
 
-
-/* Which screen is currently active */
+/* Which screen is currently active — single unified enum shared by the
+   simulation and the UI layer. Previously ui.h had its own separate
+   AppScreen enum kept in sync by hand; now there is exactly one enum
+   and one variable (GameState.screen), so nothing can drift. */
 typedef enum {
   SCREEN_MENU = 0,
   SCREEN_GAME,
+  SCREEN_PAUSED,
   SCREEN_WIN,
   SCREEN_LOSE
 } GameScreen;
@@ -110,8 +113,8 @@ typedef struct {
   float borderControl;
   RegionState state;
   RegionClimate climate;
-  float cureResearch;/* NEW: 0-100, local research investment       */
-  int bordersClosed;    /* NEW: 1 = player has locked this region down */
+  float cureResearch;   /* 0-100, local research investment       */
+  int bordersClosed;    /* 1 = player has locked this region down */
 } Region;
 
 /*
@@ -135,11 +138,10 @@ typedef struct {
     float       cost;         /* research point cost to unlock             */
     int         prereqIndex;  /* index of required prior skill (-1 = root) */
 
-    /* Additive or multiplicative modifiers applied on unlock */
-    float researchMod;        /* multiplier to research speed              */
-    float fundingMod;         /* flat bonus added to fundingPerTick        */
-    float distributionMod;    /* multiplier to vaccine distribution rate   */
-    float borderMod;          /* flat bonus added to all region borderCtrl */
+    float researchMod;
+    float fundingMod;
+    float distributionMod;
+    float borderMod;
 } SkillNode;
 
 /*
@@ -147,29 +149,23 @@ typedef struct {
  * Every module receives a pointer to this struct.
  */
 typedef struct {
-    GameScreen screen;                //Keeps track of what screen the player is currently looking at
+    GameScreen screen;   // What screen is currently active — including pause
 
-    Virus     virus;                  //Holds all the pathogen stats
-    CureState cure;                   //Holds the vaccine progress
+    Virus     virus;
+    CureState cure;
 
-    Region    regions[MAX_REGIONS];   //This is a fixed list (array) of all our kingdoms.
-    Event     eventLog[MAX_EVENTS];   /*The active list of news notifications 
-                                        being drawn on the right side of your screen */
-    int       eventCount;             /*Keeps track of how many active events are currently
-                                       being displayed so the game knows where to draw the next one */
+    Region    regions[MAX_REGIONS];
+    Event     eventLog[MAX_EVENTS];
+    int       eventCount;
 
-    SkillNode skills[MAX_SKILLS];     /*The array that holds all the buyable RPG-style upgrades 
-                                        (e.g., "Citadel Quarantine", "Raven Network")*/
+    SkillNode skills[MAX_SKILLS];
+    int       skillCount;
 
-    int       skillCount;              // The total number of skills loaded into the tree.
-
-    int   day;                        //The current day count of the pandemic 
-    float dayTimer;                   //The countdown tracking the current day's progress (once it hits dayLength, the day ticks forward).    
-    float dayLength;                  //How many real-world seconds make up one in-game day                
-    int   paused;                     //A simple true/false (1 or 0) flag. If 1,our simulation freezes.
-    int   gameSpeed;                  //simulation speed multiplier: 1, 2 so far  
-    int selectedRegionIndex;
-    //Remembers which region the player has currently clicked on so the UI can display its specific information
+    int   day;
+    float dayTimer;
+    float dayLength;
+    int   gameSpeed;
+    int   selectedRegionIndex;
   } GameState;
 
 #endif /* TYPES_H */
