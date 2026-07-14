@@ -12,9 +12,6 @@
  *
  * Parameters:
  *   gs - pointer to the active GameState; must not be NULL.
- *
- * Side effects:
- *   Writes to gs->regions[0..MAX_REGIONS-1].
  */
 void region_init(GameState *gs) {
 /* Shorthand to avoid repeating gs->regions[i] on every line */

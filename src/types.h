@@ -75,8 +75,8 @@ typedef enum {
  * Virus - biological state of the pathogen.
  */
 typedef struct {
-    float infectivity;      /* base per-tick spread rate                  */
-    float severity;         /* rate at which healthcare capacity degrades  */
+    float infectivity;      /* (base)spread per day                  */
+    float severity;         /* healthcare degradation per day  */
     float resistance;       /* reduces final cure effectiveness (0-1)      */
     float mutationRate;     /* probability of acquiring a new trait daily  */
     int   activeTraits;     /* bitmask of active MutationTrait flags       */
@@ -88,16 +88,23 @@ typedef struct {
  * CureState - the full research and production pipeline.
  */
 typedef struct {
-  ResearchPhase phase;
-  float researchProgress;  /* 0-100, progress through the current phase  */
+  ResearchPhase phase; 
+  float researchProgress;   /*0-100,
+                            shows how close scientists are to completing the current phase.
+                            Once it hits 100, it drops back to 0,
+                             and phase increments by 1.  
+                            */
   float stability;         /* 0-1, degrades when virus mutates           */
-  float effectiveness;     /* 0-1, potency of finished cure              */
-  float productionRate;    /* doses generated per game-day (PRODUCTION+) */
-  float globalDistributed; /* 0-1, fraction of population vaccinated     */
-  float funding;           /* current funding pool                       */
-  float fundingPerTick;    /* passive funding income per game-day        */
-  float researchPoints;    /* currency spent to unlock skills            */
-  float rpPerTick;         /* research points earned per game-day        */
+  float effectiveness;     /* 0-1,how well the vaccine halts the spread  */
+  float productionRate;    /* doses manufactured per game-day            */
+  float globalDistributed; /* 0-1, represents total vaccinated population.
+                            When this hits 1.0 ,game is won!    
+                           */
+
+  float funding;           /* current  wallet balance of a specific region's panel;budget=funding       */
+  float fundingPerTick;    /* funding sanctioned per game-day                                    */
+  float researchPoints;    /* current Science  Wallet,only snactioned for inside the global SkillNode         */
+  float rpPerTick;         /* researchPoints sanctioned per game-day                            */
 } CureState;
 
 /*
@@ -144,28 +151,33 @@ typedef struct {
     float borderMod;
 } SkillNode;
 
-/*
+ /*
  * GameState - top-level container.
  * Every module receives a pointer to this struct.
  */
 typedef struct {
-    GameScreen screen;   // What screen is currently active — including pause
+    GameScreen screen;                 //Keeps track of what screen the player is currently looking at
+    Virus     virus;                  //Holds all the pathogen stats
+    CureState cure;                   //Holds the vaccine progress
 
-    Virus     virus;
-    CureState cure;
+    Region    regions[MAX_REGIONS];   //This is a fixed list (array) of all our kingdoms.
+    Event     eventLog[MAX_EVENTS];   /*The active list of news notifications 
+                                        being drawn on the right side of your screen */
+    int       eventCount;             /*Keeps track of how many active events are currently
+                                       being displayed so the game knows where to draw the next one */
 
-    Region    regions[MAX_REGIONS];
-    Event     eventLog[MAX_EVENTS];
-    int       eventCount;
+    SkillNode skills[MAX_SKILLS];     /*The array that holds all the buyable RPG-style upgrades 
+                                        (e.g., "Citadel Quarantine", "Raven Network")*/
 
-    SkillNode skills[MAX_SKILLS];
-    int       skillCount;
+    int       skillCount;              // The total number of skills loaded into the tree.
 
-    int   day;
-    float dayTimer;
-    float dayLength;
-    int   gameSpeed;
-    int   selectedRegionIndex;
+    int   day;                        //The current day count of the pandemic 
+    float dayTimer;                   //The countdown tracking the current day's progress (once it hits dayLength, the day ticks forward).    
+    float dayLength;                  //How many real-world seconds make up one in-game day                
+    int   paused;                     //A simple true/false (1 or 0) flag. If 1,our simulation freezes.
+    int   gameSpeed;                  //simulation speed multiplier: 1, 2 so far  
+    int selectedRegionIndex;
+    //Remembers which region the player has currently clicked on so the UI can display its specific information
   } GameState;
 
-#endif /* TYPES_H */
+#endif 

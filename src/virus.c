@@ -2,8 +2,8 @@
 #include <stdlib.h>
 
 /*
- * virus_init - Sets the pathogen's starting biological stats.
- *              Called once at the start of a new game.
+ virus_init - Sets the pathogen's starting biological stats.
+ Called once at the start of a new game.
  */
 void virus_init(Virus *v)
 {
@@ -17,11 +17,7 @@ void virus_init(Virus *v)
 }
 
 /*
- * virus_update - Flat, single-number infection model.
- *                NOT currently called from main.c: once regions are
- *                simulated, globalInfected/globalDead are calculated
- *                from region data instead (see main.c). Kept here as
- *                a standalone reference/test function.
+ virus_update - Flat, single-number infection model.
  */
 void virus_update(Virus *v, float dtDays)
 {
@@ -36,9 +32,12 @@ void virus_update(Virus *v, float dtDays)
 }
 
 /*
- * virus_try_mutate - Rolls a chance each day for the virus to gain
- *                    a new trait bit. Applies that trait's stat
- *                    modifier immediately on success.
+  if the mutationRate is 0.03f (3%), 
+  the condition if (roll > 0.03f) means that 97% of the time,
+  the condition evaluates to true and the function hits return;
+ —stopping right there. Nothing happens today.
+If the roll lands under 0.03f, the check fails,
+  the gate opens, and the mutation begins
  */
 void virus_try_mutate(Virus *v, float dtDays)
 {
@@ -49,7 +48,8 @@ void virus_try_mutate(Virus *v, float dtDays)
     int count = 0;
     for (int i = 0; i < 8; i++) {
         MutationTrait t = (MutationTrait)(1 << i);
-        if (!(v->activeTraits & t)) candidates[count++] = t;
+        if (!(v->activeTraits & t)) 
+            candidates[count++] = t;
     }
     if (count == 0) return; /* fully mutated, nothing left to gain */
 

@@ -5,11 +5,6 @@
 #include <stdbool.h>
 #include "types.h"
 
-// -----------------------------------------------------------------------------
-// UI GAME DATA
-// GameScreen (defined in types.h) is the single screen-state enum — no
-// separate UI-only enum here anymore.
-// -----------------------------------------------------------------------------
 
 // Global game statistics structure
 typedef struct GameStats {
@@ -28,11 +23,15 @@ typedef struct RegionData {
     float cureResearch;
     bool bordersClosed;
     bool isSelected;
+    /*When the player clicks on a region, 
+     this flag flips to true on that country,
+     signaling the drawing engine to pop open 
+     its custom detail menu panel on the screen.
+    */
 } RegionData;
 
-// -----------------------------------------------------------------------------
 // FUNCTION DECLARATIONS
-// -----------------------------------------------------------------------------
+
 void InitUI(void);
 
 bool DrawUIButton(Rectangle bounds, const char *text, Color baseColor, Color hoverColor);
@@ -45,4 +44,4 @@ void DrawPauseOverlay(GameScreen *currentState);
 
 void DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *stats);
 
-#endif // UI_H
+#endif 
