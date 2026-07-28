@@ -1,3 +1,8 @@
+/*
+This ui.c file contains all the building blocks for drawing the visual interface  using raylib. 
+It handles rendering buttons, bars, menus, and the interactive country panels.
+*/
+
 #include "ui.h"
 #include <stdio.h>
 
