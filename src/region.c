@@ -12,9 +12,6 @@
  *
  * Parameters:
  *   gs - pointer to the active GameState; must not be NULL.
- *
- * Side effects:
- *   Writes to gs->regions[0..MAX_REGIONS-1].
  */
 void region_init(GameState *gs) {
 /* Shorthand to avoid repeating gs->regions[i] on every line */
@@ -31,6 +28,9 @@ void region_init(GameState *gs) {
   R(0).borderControl = 0.65f;
   R(0).state = REGION_CLEAN;
   R(0).climate = CLIMATE_COLD;
+  R(0).cureResearch = 0.0f;
+  R(0).bordersClosed = 0;
+
 
   /* --- Dorne (Spain, especially Andalusia and Moorish Iberia, with some
    * Middle Eastern influence) --- */
@@ -43,6 +43,9 @@ void region_init(GameState *gs) {
   R(1).borderControl = 0.48f;
   R(1).state = REGION_CLEAN;
   R(1).climate = CLIMATE_HOT;
+  R(1).cureResearch = 0.0f;
+  R(1).bordersClosed = 0;
+
 
   /* --- Westeros (Primarily Britain, medieval Western Europe) --- */
   R(2).name = "Westeros";
@@ -54,6 +57,8 @@ void region_init(GameState *gs) {
   R(2).borderControl = 0.65f;
   R(2).state = REGION_INFECTED;
   R(2).climate = CLIMATE_TEMPERATE;
+  R(2).cureResearch = 0.0f;
+  R(2).bordersClosed = 0;
 
   /* --- The Vale (Alpine regions such as Switzerland and Austria) --- */
   R(3).name = "The Vale";
@@ -65,6 +70,8 @@ void region_init(GameState *gs) {
   R(3).borderControl = 0.85f;
   R(3).state = REGION_CLEAN;
   R(3).climate = CLIMATE_TEMPERATE;
+  R(3).cureResearch = 0.0f;
+  R(3).bordersClosed = 0;
 
   /* --- Essos (Asia — secondary outbreak, largest pop) --- */
   R(4).name = "Essos";
@@ -76,6 +83,8 @@ void region_init(GameState *gs) {
   R(4).borderControl = 0.45f;
   R(4).state = REGION_INFECTED;
   R(4).climate = CLIMATE_HOT;
+  R(4).cureResearch = 0.0f;
+  R(4).bordersClosed = 0;
 
   /* --- The Iron Islands (Australia/Oceania — isolated) --- */
   R(5).name = "The Iron Islands";
@@ -87,6 +96,8 @@ void region_init(GameState *gs) {
   R(5).borderControl = 0.80f;
   R(5).state = REGION_CLEAN;
   R(5).climate = CLIMATE_TEMPERATE;
+  R(5).cureResearch = 0.0f;
+  R(5).bordersClosed = 0;
 
   /* --- Beyond the Wall (Antarctica — research stations only) --- */
   R(6).name = "Beyond the Wall";
@@ -98,6 +109,8 @@ void region_init(GameState *gs) {
   R(6).borderControl = 0.95f;
   R(6).state = REGION_CLEAN;
   R(6).climate = CLIMATE_COLD;
+  R(6).cureResearch = 0.0f;
+  R(6).bordersClosed = 0;
 
   /* --- The Dothraki Sea (Eurasian Steppe) --- */
   R(7).name = "The Dothraki Sea ";
@@ -109,6 +122,8 @@ void region_init(GameState *gs) {
   R(7).borderControl = 0.10f;
   R(7).state = REGION_CLEAN;
   R(7).climate = CLIMATE_HOT;
+  R(7).cureResearch = 0.0f;
+  R(7).bordersClosed = 0;
 
 #undef R
 }

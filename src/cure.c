@@ -7,8 +7,12 @@
 void cure_init(CureState *c)
 {
     c->phase             = PHASE_DISCOVERY;
-    c->researchProgress  = 0.0f;
-    c->stability          = 1.0f;
+    c->researchProgress  = 0.0f;   
+    c->stability          = 1.0f;/* The cure begins at 100% stability. 
+                                    If a virus mutates rapidly,
+                                    this number might drop later,
+                                    rendering research volatile.
+                                   */
     c->effectiveness      = 0.0f;
     c->productionRate     = 0.0f;
     c->globalDistributed  = 0.0f;
@@ -49,6 +53,6 @@ void cure_update(CureState *c, float dtDays)
     {
         /* PHASE_DISTRIBUTION: roll out doses globally */
         c->globalDistributed += 0.02f * c->effectiveness * dtDays;
-        if (c->globalDistributed > 1.0f) c->globalDistributed = 1.0f;
+        if (c->globalDistributed > 1.0f) c->globalDistributed = 1.0f;//victory
     }
 }
