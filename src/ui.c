@@ -1,70 +1,36 @@
-define UI_H
 
-#include "raylib.h"
-#include <stdbool.h>
-#include "types.h"
-#include <stdbool.h>  //for true false.we need boool cuz DrawUIButton returns true false not number
-#include "types.h" //for gamescreen enum
+#include "ui.h" //pulls in our own header
+#include <stdio.h>
 
-typedef enum UIAction { //An enum (short for enumeration) is a feature in C that lets you create a custom variable type with a fixed list of named choices. Under the hood, C assigns whole numbers ($0, 1, 2...$) to each name, but you get to write readable words instead of confusing numbers.
-    UI_NONE = 0, //nothing was clicked,automatically equals 0
-    UI_START_GAME, //player clicked start,..1
-     UI_MAIN_MENU, // .. main,..2
-    UI_RESUME, // .. resume
-    UI_SPEED_1,
-    UI_SPEED_2,
-    UI_PAUSE,
-    UI_FUND_RESEARCH,
-    UI_TOGGLE_BORDERS,//.. close/open borders
-    UI_UNLOCK_SKILL,
-} UIAction;
+void InitUI(void) {
+    // Reserved for future UI resources (fonts, sounds)
+}//empty for now. kichu korena.
 
+void DrawUIPanel(Rectangle bounds, Color background , Color border, float borderWidth){
+    DrawRectangleRec(bounds, background);
+    DrawRectangleLinesEx(bounds, borderWidth, border);
+}
 
-// Global game statistics structure
-typedef struct GameStats {
-    float cureProgress;     // Percentage (0.0f to 100.0f)
-    float globalInfection;  // Percentage (0.0f to 100.0f)
-    int budget;             // Game currency / research points
-    int dayCount;           // Number of days elapsed
-    int gameSpeed;          // 0 = Paused, 1 = Normal, 2 = Fast
-    float cureProgress;     // 0.0f to 100.0f
-    float globalInfection;  // 0.0f to 100.0f
-    int   budget;           // in-game currency
-    int   dayCount;         // days elapsed
-    int   gameSpeed;        // 0 = paused, 1 = normal, 2 = fast
-} GameStats;
-// Region/Country details structure for side panel display
-typedef struct RegionData {
-    const char *name;
-    int population;
-    int infectedCount;
-    float cureResearch;
-    bool bordersClosed;
-    bool isSelected;
-    /*When the player clicks on a region, 
-     this flag flips to true on that country,
-     signaling the drawing engine to pop open 
-     its custom detail menu panel on the screen.
-    */
-} RegionData;
+bool DrawUIButton(Rectangle bounds, const char *text, Color baseColor, Color hoverColor){ //bool: এই ফাংশনটি true (সত্য) অথবা false (মিথ্যা) ফেরত দেবে। বাটনে ক্লিক হলে true দেবে, না হলে false দেবে।
 
-// FUNCTION DECLARATIONS
+    //mouse koi ase
+    Vector2 mousePos = GetMousePosition(); //vector2 is raylib's struct for an {x, y} point. GetMousePosition() asks raylib "where is the cursor right now, in window pixels" and hands back that point. This is called fresh every single frame — raylib doesn't track "the mouse" persistently for you, your game loop asks anew 60 times a second.
+    //mous er pointer vitore ase kina box er taile hovered
+    bool isHovered = CheckCollisionPointRec(mousePos, bounds); //a raylib collision-detection helper: "is this point inside this rectangle
+    //jodi thake hoverColor naile arekta
+    Color activeColor = isHovered ? hoverColor : baseColor;
 
-void InitUI(void);
-void InitUI(void); //(Initialization function)
+    DrawRectangleRec(bounds, activeColor);
+    DrawRectangleLinesEx(bounds, 2.0f, DARKGRAY);
+
+    int fontSize = 18;
+    int textWidth = MeasureText(text, fontSize);
+    float textX = bounds.x + (bounds.width - textWidth) / 2.0f; //
+    float textY = bounds.y + (bounds.height - fontSize) / 2.0f;
+
+    DrawText(text, (int)textX, (int)textY, fontSize, WHITE);
+
+    return (isHovered && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)); //মাউসটি যদি বাটনের ওপর থাকে (isHovered) এবং মাউসের বামের বাটনে ক্লিক করা হয় (IsMouseButtonPressed), কেবল তখনই এটি true রিটার্ন করবে।
 
 
-bool DrawUIButton(Rectangle bounds, const char *text, Color baseColor, Color hoverColor);
-void DrawUIPanel(Rectangle bounds, Color background, Color border, float borderWidth);
-void DrawProgressBar(Rectangle bounds, float percentage, Color barColor, Color bgColor, const char *label);
-
-void DrawMainMenu(GameScreen *currentState);
-void DrawGameplayHUD(GameScreen *currentState, GameStats *stats);
-void DrawPauseOverlay(GameScreen *currentState);
-
-void DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *stats);
-UIAction UI_DrawMainMenu(GameScreen currentState);
-UIAction UI_DrawGameplayHUD(const GameStats *stats);
-UIAction UI_DrawPauseOverlay(void);
-
-#endif 
+}
