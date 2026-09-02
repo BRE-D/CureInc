@@ -153,3 +153,70 @@ void DrawPauseOverlay(GameState *currentState) {
         *currentState = STATE_MAIN_MENU;
     }
 }
+
+void DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *stats) {
+    if (!region || !region->isSelected) return; // Only render if region is active
+
+    // 1. Draw Panel Background Box
+    DrawUIPanel(bounds, RAYWHITE, DARKGRAY, 2.0f);
+
+    // 2. Header: Region Title and Close ('X') Button
+    DrawText(region->name, (int)bounds.x + 15, (int)bounds.y + 15, 22, DARKBLUE);
+
+    Rectangle closeBtn = { bounds.x + bounds.width - 35, bounds.y + 10, 25, 25 };
+    if (DrawUIButton(closeBtn, "X", RED, MAROON)) {
+        region->isSelected = false; // Close the panel
+    }
+
+    // Divider line below title
+    DrawLine((int)bounds.x + 10, (int)bounds.y + 45, (int)(bounds.x + bounds.width - 10), (int)bounds.y + 45, GRAY);
+
+    // 3. Display Population and Infection Stats
+    char popBuf[64];
+    snprintf(popBuf, sizeof(popBuf), "Population: %d", region->population);
+    DrawText(popBuf, (int)bounds.x + 15, (int)bounds.y + 60, 16, BLACK);
+
+    char infBuf[64];
+    snprintf(infBuf, sizeof(infBuf), "Infected: %d", region->infectedCount);
+    DrawText(infBuf, (int)bounds.x + 15, (int)bounds.y + 85, 16, RED);
+
+    // Regional Infection Bar calculation
+    float infectionPercent = 0.0f;
+    if (region->population > 0) {
+        infectionPercent = ((float)region->infectedCount / (float)region->population) * 100.0f;
+    }
+    Rectangle regInfectBar = { bounds.x + 15, bounds.y + 115, bounds.width - 30, 22 };
+    DrawProgressBar(regInfectBar, infectionPercent, RED, LIGHTGRAY, "Infection");
+
+    // Regional Cure Research Bar
+    Rectangle regCureBar = { bounds.x + 15, bounds.y + 150, bounds.width - 30, 22 };
+    DrawProgressBar(regCureBar, region->cureResearch, BLUE, LIGHTGRAY, "Local Research");
+
+    // Status Indicator Text
+    const char *borderStatus = region->bordersClosed ? "Borders: CLOSED" : "Borders: OPEN";
+    Color statusColor = region->bordersClosed ? RED : DARKGREEN;
+    DrawText(borderStatus, (int)bounds.x + 15, (int)bounds.y + 190, 16, statusColor);
+
+    // 4. Interactive Action Buttons
+    // Action 1: Deploy Field Hospital / Fund Research
+    Rectangle fundBtn = { bounds.x + 15, bounds.y + 230, bounds.width - 30, 35 };
+    if (DrawUIButton(fundBtn, "Fund Research ($500)", DARKGREEN, GREEN)) {
+        if (stats->budget >= 500) {
+            stats->budget -= 500;
+            region->cureResearch += 5.0f;
+            if (region->cureResearch > 100.0f) region->cureResearch = 100.0f;
+        }
+    }
+
+    // Action 2: Toggle Border Lockdown
+    const char *toggleLabel = region->bordersClosed ? "Reopen Borders" : "Close Borders ($200)";
+    Rectangle borderBtn = { bounds.x + 15, bounds.y + 275, bounds.width - 30, 35 };
+    if (DrawUIButton(borderBtn, toggleLabel, MAROON, RED)) {
+        if (!region->bordersClosed && stats->budget >= 200) {
+            stats->budget -= 200;
+            region->bordersClosed = true;
+        } else if (region->bordersClosed) {
+            region->bordersClosed = false;
+        }
+    }
+}

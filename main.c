@@ -11,31 +11,43 @@ int main(void) {
     InitUI();
     GameState currentState = STATE_MAIN_MENU;
 
-    // Mock simulation stats for testing UI display
+    // Global Stats Mock
     GameStats stats = {
         .cureProgress = 15.0f,
-        .globalInfection = 2.5f,
-        .budget = 50000,
+        .globalInfection = 5.0f,
+        .budget = 5000,
         .dayCount = 1,
         .gameSpeed = 1
     };
 
+    // Sample Region Mock Data
+    RegionData activeRegion = {
+        .name = "North America",
+        .population = 500000,
+        .infectedCount = 25000,
+        .cureResearch = 12.0f,
+        .bordersClosed = false,
+        .isSelected = false
+    };
+
+    // Interactive clickable node representing region on world map placeholder
+    Rectangle regionClickTarget = { 400, 300, 120, 40 };
+
     float timer = 0.0f;
 
     while (!WindowShouldClose()) {
-        // --- SIMULATION MOCK UPDATE (Simulating time & progress) ---
+        // --- SIMULATION TICK ---
         if (currentState == STATE_GAMEPLAY && stats.gameSpeed > 0) {
             timer += GetFrameTime() * stats.gameSpeed;
-            if (timer >= 1.0f) { // Every 1 second
+            if (timer >= 1.0f) {
                 timer = 0.0f;
                 stats.dayCount++;
-                stats.cureProgress += 0.5f;     // Slowly advance cure
-                stats.globalInfection += 0.3f; // Slowly advance infection
-                stats.budget += 100;
+                stats.cureProgress += 0.2f;
 
-                // Keep stats within valid ranges
-                if (stats.cureProgress > 100.0f) stats.cureProgress = 100.0f;
-                if (stats.globalInfection > 100.0f) stats.globalInfection = 100.0f;
+                // Slowly increase infection if borders open
+                if (!activeRegion.bordersClosed && activeRegion.infectedCount < activeRegion.population) {
+                    activeRegion.infectedCount += 500;
+                }
             }
         }
 
@@ -49,20 +61,32 @@ int main(void) {
                     break;
 
                 case STATE_GAMEPLAY:
-                    DrawText("[ Interactive World Map Placeholder ]", screenWidth / 2 - 200, screenHeight / 2, 20, LIGHTGRAY);
-                    
-                    // Draw HUD on top of map
-                    DrawGameplayHUD(&currentState, &stats);
-                    break;
-
                 case STATE_PAUSED:
-                    DrawText("[ Interactive World Map Placeholder ]", screenWidth / 2 - 200, screenHeight / 2, 20, LIGHTGRAY);
-                    
-                    // Draw HUD underneath pause
+                    // 1. World Map Visual Placeholder
+                    DrawText("[ Interactive World Map Placeholder ]", 350, 200, 20, LIGHTGRAY);
+
+                    // 2. Clickable Region Target (Interactive Node)
+                    bool hovered = CheckCollisionPointRec(GetMousePosition(), regionClickTarget);
+                    DrawRectangleRec(regionClickTarget, hovered ? SKYBLUE : BLUE);
+                    DrawRectangleLinesEx(regionClickTarget, 2, DARKBLUE);
+                    DrawText("N. America", (int)regionClickTarget.x + 10, (int)regionClickTarget.y + 10, 18, WHITE);
+
+                    // Click detection on region node
+                    if (currentState == STATE_GAMEPLAY && hovered && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                        activeRegion.isSelected = true; // Open side panel
+                    }
+
+                    // 3. Draw Top Header HUD
                     DrawGameplayHUD(&currentState, &stats);
-                    
-                    // Overlay pause menu
-                    DrawPauseOverlay(&currentState);
+
+                    // 4. Draw Region Side Panel (if active)
+                    Rectangle sidePanelBounds = { (float)screenWidth - 320, 70, 300, 350 };
+                    DrawRegionPanel(sidePanelBounds, &activeRegion, &stats);
+
+                    // 5. Draw Pause Overlay if paused
+                    if (currentState == STATE_PAUSED) {
+                        DrawPauseOverlay(&currentState);
+                    }
                     break;
 
                 default:
