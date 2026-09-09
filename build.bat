@@ -7,7 +7,7 @@ REM ============================================================
 
 set RAYLIB=C:\raylib\raylib\src
 
-gcc -std=c2x -Wall ^
+gcc -std=c11 -Wall ^
     -I%RAYLIB% ^
     src/main.c ^
     src/virus.c ^
