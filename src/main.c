@@ -7,7 +7,7 @@
 #include "events.h"
 #include <stdio.h>
 
-// virus-system simulation 
+// virus-system simulation
 
 static float region_effective_healthcare(const Region *r)
 {
@@ -112,98 +112,10 @@ static void reset_game(GameState *gs)
     region_init(gs);
     cure_init(&gs->cure);
     events_init(gs);
+    UI_ResetGameplayState();
 }
 
-//UI <-> sim data bridge 
-
-static void pull_ui_snapshot(const GameState *gs, GameStats *stats, RegionData *rd)
-{
-    const Region *sel = &gs->regions[gs->selectedRegionIndex];
-    bool gameplayActive = (gs->screen == SCREEN_GAME);
-
-    stats->cureProgress    = gs->cure.researchProgress;
-    stats->globalInfection = gs->virus.globalInfected * 100.0f;
-    stats->budget          = (int)gs->cure.funding;
-    stats->dayCount        = gs->day;
-    stats->gameSpeed       = (gs->screen == SCREEN_PAUSED) ? 0
-                              : gameplayActive ? gs->gameSpeed : stats->gameSpeed;
-
-    rd->name          = sel->name;
-    rd->population    = (int)(sel->population * 1000000.0f);
-    rd->infectedCount = (int)(sel->infected * rd->population);
-    rd->cureResearch  = sel->cureResearch;
-    rd->bordersClosed = sel->bordersClosed;
-}
-
-static void push_ui_actions(GameState *gs, const GameStats *stats, const RegionData *rd, int *savedSpeed)
-{
-    Region *sel = &gs->regions[gs->selectedRegionIndex];
-
-    gs->cure.funding   = (float)stats->budget;
-    sel->cureResearch  = rd->cureResearch;
-    sel->bordersClosed = rd->bordersClosed;
-
-    if (stats->gameSpeed > 0) { *savedSpeed = stats->gameSpeed; gs->gameSpeed = stats->gameSpeed; }
-    else if (gs->screen != SCREEN_PAUSED) { gs->gameSpeed = *savedSpeed; }
-}
-
-//drawing helpers
-
-static void draw_event_log(const GameState *gs)
-{
-    int y = SCREEN_HEIGHT - 80;
-    for (int i = 0; i < MAX_EVENTS; i++)
-    {
-        if (!gs->eventLog[i].active) continue;
-
-        Rectangle box = { 20, (float)y, 1000, 46 };
-        DrawRectangleRec(box, Fade(DARKBLUE, 0.85f));
-        DrawRectangleLinesEx(box, 1.5f, BLUE);
-
-        char text[256];
-        snprintf(text, sizeof(text), "[!] %s: %s", gs->eventLog[i].title, gs->eventLog[i].description);
-        DrawText(text, 28, y + 13, 20, WHITE);
-        y -= 54;
-    }
-}
-
-static void draw_gameplay(GameState *gs, GameStats *stats, RegionData *rd, Rectangle regionNode)
-{
-    DrawText("[ Interactive World Map Placeholder ]", 350, 200, 20, LIGHTGRAY);
-
-    bool hovered = CheckCollisionPointRec(GetMousePosition(), regionNode);
-    DrawRectangleRec(regionNode, hovered ? SKYBLUE : BLUE);
-    DrawRectangleLinesEx(regionNode, 2, DARKBLUE);
-    DrawText(rd->name, (int)regionNode.x + 10, (int)regionNode.y + 10, 18, WHITE);
-
-    if (gs->screen == SCREEN_GAME)
-    {
-        if (hovered && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) rd->isSelected = true;
-        if (IsKeyPressed(KEY_TAB)) gs->selectedRegionIndex = (gs->selectedRegionIndex + 1) % MAX_REGIONS;
-    }
-
-    draw_event_log(gs);
-
-    DrawGameplayHUD(&gs->screen, stats);
-
-    Rectangle panel = { (float)SCREEN_WIDTH - 320, 70, 300, 350 };
-    DrawRegionPanel(panel, rd, stats);
-
-    if (gs->screen == SCREEN_PAUSED) DrawPauseOverlay(&gs->screen);
-}
-
-static void draw_game_over(GameState *gs)
-{
-    DrawText(gs->screen == SCREEN_WIN ? "CURE DISTRIBUTED - HUMANITY SAVED" : "HUMANITY HAS FALLEN",
-              gs->screen == SCREEN_WIN ? 300 : 420, 320, gs->screen == SCREEN_WIN ? 34 : 40,
-              gs->screen == SCREEN_WIN ? DARKGREEN : RED);
-
-    Rectangle menuBtn = { (float)(SCREEN_WIDTH - 200) / 2, 420, 200, 50 };
-    if (DrawUIButton(menuBtn, "MAIN MENU", BLUE, SKYBLUE))
-        gs->screen = SCREEN_MENU;
-}
-
-//main
+// main
 
 int main(void)
 {
@@ -215,10 +127,7 @@ int main(void)
     state.screen              = SCREEN_MENU;
     state.selectedRegionIndex = 2;
 
-    GameStats stats         = {0};
-    RegionData activeRegion = {0};
-    int savedSpeed          = 1;
-    Rectangle regionNode     = { 400, 300, 200, 40 };
+    Rectangle regionNode = { 400, 300, 200, 40 };
 
     while (!WindowShouldClose())
     {
@@ -237,35 +146,33 @@ int main(void)
             events_update(&state, dt);
         }
 
-        pull_ui_snapshot(&state, &stats, &activeRegion);
-
         BeginDrawing();
             ClearBackground(RAYWHITE);
             switch (state.screen)
             {
                 case SCREEN_MENU: {
-                    GameScreen before = state.screen;
-                    DrawMainMenu(&state.screen);
-                    if (before == SCREEN_MENU && state.screen == SCREEN_GAME)
-                    {
+                    UIAction action = UI_DrawMainMenu(state.screen);
+                    if (action == UI_START_GAME) {
+                        state.screen = SCREEN_GAME;
                         reset_game(&state);
-                        activeRegion.isSelected = false;
                     }
                     break;
                 }
                 case SCREEN_GAME:
                 case SCREEN_PAUSED:
-                    draw_gameplay(&state, &stats, &activeRegion, regionNode);
+                    UI_DrawGameplay(&state, regionNode);
                     break;
                 case SCREEN_WIN:
-                case SCREEN_LOSE:
-                    draw_game_over(&state);
+                case SCREEN_LOSE: {
+                    UIAction action = UI_DrawEndScreen(state.screen);
+                    if (action == UI_MAIN_MENU) {
+                        state.screen = SCREEN_MENU;
+                    }
                     break;
+                }
                 default: break;
             }
         EndDrawing();
-
-        push_ui_actions(&state, &stats, &activeRegion, &savedSpeed);
     }
 
     CloseWindow();
