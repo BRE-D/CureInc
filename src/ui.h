@@ -15,7 +15,10 @@ typedef enum { //etar step onujayi shb chole
     UI_PAUSE,
     UI_FUND_RESEARCH,
     UI_TOGGLE_BORDERS,
-    UI_UNLOCK_SKILL
+    UI_UNLOCK_SKILL,
+    UI_HIRE_SCIENTIST,
+    UI_UPGRADE_LAB,
+    UI_INCREASE_PRODUCTION
 } UIAction;
 
 typedef struct GameStats {
