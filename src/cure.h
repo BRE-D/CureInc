@@ -3,6 +3,6 @@
 #include "types.h"
 
 void cure_init(CureState *c);
-void cure_update(CureState *c, float dtDays);
+void cure_update(GameState *gs, float dtDays);
 
 #endif

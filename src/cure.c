@@ -23,22 +23,29 @@ void cure_init(CureState *c)
 }
 
 /*
- * cure_update - Minimal placeholder progression through the four
- *               research phases, ending in global distribution.
- *               This is intentionally simple: enough to give the
- *               game a real win condition. Skill-tree modifiers,
- *               funding costs, and stability effects (from virus
- *               mutation) can be layered on top later without
- *               changing this function's shape.
+ * cure_update - Advances the cure research pipeline through four phases.
+ *               Research speed is affected by stability (virus mutations),
+ *               and regional research contributions are aggregated to boost
+ *               global progress. Distribution effectiveness depends on
+ *               final stability value locked at the end of Phase 3.
  */
-void cure_update(CureState *c, float dtDays)
+void cure_update(GameState *gs, float dtDays)
 {
+    CureState *c = &gs->cure;
+    
     c->funding += c->fundingPerTick * dtDays;
     c->researchPoints += c->rpPerTick * dtDays;
 
     if (c->phase < PHASE_DISTRIBUTION)
     {
-        c->researchProgress += c->rpPerTick * dtDays;
+        /* Aggregate regional research contributions */
+        float regionalBoost = 0.0f;
+        for (int i = 0; i < MAX_REGIONS; i++) {
+            regionalBoost += gs->regions[i].cureResearch * 0.01f;
+        }
+        
+        /* Research progress: base rate + regional boost, scaled by stability */
+        c->researchProgress += (c->rpPerTick + regionalBoost) * c->stability * dtDays;
 
         if (c->researchProgress >= 100.0f)
         {
