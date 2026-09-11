@@ -289,3 +289,28 @@ UIAction UI_DrawEndScreen(GameScreen screen) {
 
     return UI_NONE;
 }
+
+UIAction UI_DrawLabPanel(void) {
+    Rectangle bounds = { 20, 80, 260, 170 };
+    DrawUIPanel(bounds, RAYWHITE, DARKGRAY, 2.0f);
+    DrawText("LAB OPERATIONS", (int)bounds.x + 15, (int)bounds.y + 12, 18, DARKBLUE);
+
+    UIAction action = UI_NONE;
+
+    Rectangle hireBtn = { bounds.x + 15, bounds.y + 45, 230, 32 };
+    if (DrawUIButton(hireBtn, "Hire Scientist", DARKBLUE, SKYBLUE)) {
+        action = UI_HIRE_SCIENTIST;
+    }
+
+    Rectangle upgradeBtn = { bounds.x + 15, bounds.y + 85, 230, 32 };
+    if (DrawUIButton(upgradeBtn, "Upgrade Lab", DARKBLUE, SKYBLUE)) {
+        action = UI_UPGRADE_LAB;
+    }
+
+    Rectangle prodBtn = { bounds.x + 15, bounds.y + 125, 230, 32 };
+    if (DrawUIButton(prodBtn, "Increase Production", DARKBLUE, SKYBLUE)) {
+        action = UI_INCREASE_PRODUCTION;
+    }
+
+    return action;
+}
