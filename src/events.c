@@ -77,6 +77,73 @@ void events_trigger_random(GameState *gs)
             break;
         }
     }
+
+    /* Apply mechanical effects based on event type */
+    switch (pick)
+    {
+        case 1: /* "Funding Surge" */
+            gs->cure.fundingPerTick += 2.0f;
+            break;
+
+        case 5: /* "Lab Breakthrough" */
+            gs->cure.researchProgress += 15.0f;
+            break;
+
+        case 6: /* "Budget cuts" */
+            gs->cure.fundingPerTick -= 1.5f;
+            if (gs->cure.fundingPerTick < 1.0f) gs->cure.fundingPerTick = 1.0f;
+            break;
+
+        case 7: /* "Volunteer Surge" */
+            gs->cure.rpPerTick += 0.3f;
+            break;
+
+        case 8: /* "Supply Disruption" */
+            gs->cure.globalDistributed -= 0.05f;
+            if (gs->cure.globalDistributed < 0.0f) gs->cure.globalDistributed = 0.0f;
+            break;
+
+        case 10: /* "Supply Chain Collapse" */
+            gs->cure.productionRate *= 0.5f;
+            gs->cure.fundingPerTick -= 2.0f;
+            if (gs->cure.fundingPerTick < 0.5f) gs->cure.fundingPerTick = 0.5f;
+            break;
+
+        case 11: /* "Political Infighting" */
+            gs->cure.funding -= 50.0f;
+            if (gs->cure.funding < 0.0f) gs->cure.funding = 0.0f;
+            break;
+
+        case 12: /* "Medical Miracle" */
+            gs->cure.researchProgress += 25.0f;
+            gs->cure.rpPerTick += 0.5f;
+            break;
+
+        case 2: /* "Mutation Detected" */
+            gs->cure.stability -= 0.10f;
+            if (gs->cure.stability < 0.3f) gs->cure.stability = 0.3f;
+            break;
+
+        case 3: /* "Public Panic" */
+            for (int r = 0; r < MAX_REGIONS; r++)
+            {
+                gs->regions[r].publicTrust -= 0.05f;
+                if (gs->regions[r].publicTrust < 0.1f) gs->regions[r].publicTrust = 0.1f;
+            }
+            break;
+
+        case 4: /* "Border Lockdown" */
+            for (int r = 0; r < MAX_REGIONS; r++)
+            {
+                gs->regions[r].borderControl += 0.10f;
+                if (gs->regions[r].borderControl > 1.0f) gs->regions[r].borderControl = 1.0f;
+            }
+            break;
+
+        default:
+            /* Events 0, 9, 13 are informational only */
+            break;
+    }
 }
 
 void events_update(GameState *gs, float delta)
