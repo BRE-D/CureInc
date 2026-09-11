@@ -8,8 +8,8 @@
 RAYLIB_PATH = C:/raylib/raylib/src
 
 CC      = gcc
-CFLAGS  = -std=c2x -Wall -Wno-missing-braces -I$(RAYLIB_PATH)
-CFLAGS  = -std=c2x -Wall -Wno-missing-braces -I$(RAYLIB_PATH) -Isrc
+CFLAGS  = -std=c11 -Wall -Wno-missing-braces -I$(RAYLIB_PATH)
+CFLAGS  = -std=c11 -Wall -Wno-missing-braces -I$(RAYLIB_PATH) -Isrc
 LDFLAGS = -L$(RAYLIB_PATH) -lraylib -lopengl32 -lgdi32 -lwinmm -lm
 
 SRC = src/main.c   \
