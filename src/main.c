@@ -91,10 +91,17 @@ static void check_win_lose(GameState *gs)
 static void day_tick(GameState *gs, float dtDays)
 {
     spread_infection(gs, dtDays);
-    virus_try_mutate(&gs->virus, dtDays);
     apply_deaths(gs, dtDays);
     aggregate_global_stats(gs);
-    cure_update(&gs->cure, dtDays);
+    
+    /* Check if virus mutated and reduce cure stability if so */
+    int mutated = virus_try_mutate(&gs->virus, dtDays);
+    if (mutated) {
+        gs->cure.stability -= 0.15f;
+        if (gs->cure.stability < 0.3f) gs->cure.stability = 0.3f;
+    }
+    
+    cure_update(gs, dtDays);
     region_update_states(gs);
     check_win_lose(gs);
 }

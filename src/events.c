@@ -59,11 +59,22 @@ void events_init(GameState *gs)
         gs->eventLog[i].timer = 0;
     }
     gs->eventCount = 0;
+    gs->lastEventIndex = -1; /* No previous event */
 }
 
 void events_trigger_random(GameState *gs)
 {
-    int pick = GetRandomValue(0, POOL_SIZE - 1);
+    int pick;
+    int attempts = 0;
+    
+    /* Try to pick a different event than the last one */
+    do {
+        pick = GetRandomValue(0, POOL_SIZE - 1);
+        attempts++;
+    } while (pick == gs->lastEventIndex && attempts < 5);
+    
+    gs->lastEventIndex = pick; /* Remember this event */
+    
     //find free slot and put event
     for (int i = 0; i < MAX_EVENTS; i++)
     {
@@ -76,6 +87,87 @@ void events_trigger_random(GameState *gs)
             gs->eventCount++;
             break;
         }
+    }
+
+    /* Apply mechanical effects based on event type */
+    switch (pick)
+    {
+        case 1: /* "Funding Surge" */
+            gs->cure.fundingPerTick += 2.0f;
+            break;
+
+        case 5: /* "Lab Breakthrough" */
+            gs->cure.researchProgress += 15.0f;
+            break;
+
+        case 6: /* "Budget cuts" */
+            gs->cure.fundingPerTick -= 1.5f;
+            if (gs->cure.fundingPerTick < 1.0f) gs->cure.fundingPerTick = 1.0f;
+            break;
+
+        case 7: /* "Volunteer Surge" */
+            gs->cure.rpPerTick += 0.3f;
+            break;
+
+        case 8: /* "Supply Disruption" */
+            gs->cure.globalDistributed -= 0.05f;
+            if (gs->cure.globalDistributed < 0.0f) gs->cure.globalDistributed = 0.0f;
+            break;
+
+        case 10: /* "Supply Chain Collapse" */
+            gs->cure.productionRate *= 0.5f;
+            gs->cure.fundingPerTick -= 2.0f;
+            if (gs->cure.fundingPerTick < 0.5f) gs->cure.fundingPerTick = 0.5f;
+            break;
+
+        case 11: /* "Political Infighting" */
+            gs->cure.funding -= 50.0f;
+            if (gs->cure.funding < 0.0f) gs->cure.funding = 0.0f;
+            break;
+
+        case 12: /* "Medical Miracle" */
+            gs->cure.researchProgress += 25.0f;
+            gs->cure.rpPerTick += 0.5f;
+            break;
+
+        case 2: /* "Mutation Detected" */
+            gs->cure.stability -= 0.10f;
+            if (gs->cure.stability < 0.3f) gs->cure.stability = 0.3f;
+            break;
+
+        case 3: /* "Public Panic" */
+            for (int r = 0; r < MAX_REGIONS; r++)
+            {
+                gs->regions[r].publicTrust -= 0.05f;
+                if (gs->regions[r].publicTrust < 0.1f) gs->regions[r].publicTrust = 0.1f;
+            }
+            break;
+
+        case 4: /* "Border Lockdown" */
+            for (int r = 0; r < MAX_REGIONS; r++)
+            {
+                gs->regions[r].borderControl += 0.10f;
+                if (gs->regions[r].borderControl > 1.0f) gs->regions[r].borderControl = 1.0f;
+            }
+            break;
+
+        case 13: /* "Winter is coming" - cold-adapted strain boosts infection in cold regions */
+            gs->virus.activeTraits |= TRAIT_COLD_ADAPTED;
+            gs->virus.infectivity += 0.08f;
+            /* Boost infection in cold climate regions */
+            for (int r = 0; r < MAX_REGIONS; r++)
+            {
+                if (gs->regions[r].climate == CLIMATE_COLD)
+                {
+                    gs->regions[r].infected += 0.03f;
+                    if (gs->regions[r].infected > 1.0f) gs->regions[r].infected = 1.0f;
+                }
+            }
+            break;
+
+        default:
+            /* Events 0, 9 are informational only */
+            break;
     }
 }
 
@@ -95,4 +187,3 @@ void events_update(GameState *gs, float delta)
         }
     }
 }
-

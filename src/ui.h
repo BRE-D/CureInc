@@ -27,6 +27,9 @@ typedef struct GameStats {
     int   budget;           // in-game currency
     int   dayCount;         // days elapsed
     int   gameSpeed;        // 0 = paused, 1 = normal, 2 = fast
+    float fundingRate;      // funding per day
+    float researchRate;     // research points per day
+    float stability;        // cure stability 0.0-1.0
 } GameStats;
 
 typedef struct RegionData {
