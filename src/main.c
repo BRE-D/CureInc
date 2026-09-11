@@ -91,9 +91,9 @@ static void check_win_lose(GameState *gs)
 static void day_tick(GameState *gs, float dtDays)
 {
     spread_infection(gs, dtDays);
-    virus_try_mutate(&gs->virus, dtDays);
     apply_deaths(gs, dtDays);
     aggregate_global_stats(gs);
+    virus_try_mutate(&gs->virus, dtDays);
     cure_update(&gs->cure, dtDays);
     region_update_states(gs);
     check_win_lose(gs);
