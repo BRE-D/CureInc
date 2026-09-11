@@ -39,19 +39,20 @@ void virus_update(Virus *v, float dtDays)
 If the roll lands under 0.03f, the check fails,
   the gate opens, and the mutation begins
  */
-void virus_try_mutate(Virus *v, float dtDays)
+/* virus.c — only virus_try_mutate changes */
+int virus_try_mutate(Virus *v, float dtDays)
 {
     float roll = (float)rand() / (float)RAND_MAX;
-    if (roll > v->mutationRate * dtDays) return;
+    if (roll > v->mutationRate * dtDays) return 0;
 
     MutationTrait candidates[8];
     int count = 0;
     for (int i = 0; i < 8; i++) {
         MutationTrait t = (MutationTrait)(1 << i);
-        if (!(v->activeTraits & t)) 
+        if (!(v->activeTraits & t))
             candidates[count++] = t;
     }
-    if (count == 0) return; /* fully mutated, nothing left to gain */
+    if (count == 0) return 0; /* fully mutated, nothing left to gain */
 
     MutationTrait chosen = candidates[rand() % count];
     v->activeTraits |= chosen;
@@ -62,10 +63,9 @@ void virus_try_mutate(Virus *v, float dtDays)
         case TRAIT_LETHAL:          v->severity     += 0.15f; break;
         case TRAIT_FAST_SPREAD:     v->infectivity += 0.10f; break;
         case TRAIT_LONG_INCUBATION: v->infectivity += 0.05f; break;
-        /* STEALTH, COLD_ADAPTED, HOT_ADAPTED: bit is set but inert
-           until region.c exposes a climate/detection field to react to. */
         default: break;
     }
+    return 1;
 }
 
 int virus_has_trait(const Virus *v, MutationTrait t)
