@@ -12,7 +12,7 @@
 #define SCREEN_WIDTH     1366
 #define SCREEN_HEIGHT    768
 
-#define DEFAULT_DAY_LENGTH  3.0f   /* real-time seconds per simulated day */
+#define DEFAULT_DAY_LENGTH  2.0f   /* real-time seconds per simulated day - faster gameplay */
 #define GLOBAL_MIXING_RATE  0.02f  /* how strongly infected regions leak into others, per day */
 
   /* 
@@ -165,6 +165,7 @@ typedef struct {
                                         being drawn on the right side of your screen */
     int       eventCount;             /*Keeps track of how many active events are currently
                                        being displayed so the game knows where to draw the next one */
+    int       lastEventIndex;         /* Track last triggered event to avoid immediate repeats */
 
     SkillNode skills[MAX_SKILLS];     /*The array that holds all the buyable RPG-style upgrades 
                                         (e.g., "Citadel Quarantine", "Raven Network")*/

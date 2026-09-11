@@ -16,10 +16,10 @@ void cure_init(CureState *c)
     c->effectiveness      = 0.0f;
     c->productionRate     = 0.0f;
     c->globalDistributed  = 0.0f;
-    c->funding            = 100.0f;
-    c->fundingPerTick     = 5.0f;
+    c->funding            = 500.0f;    /* Start with enough for immediate actions */
+    c->fundingPerTick     = 25.0f;    /* Faster income - 20 days to afford regional funding */
     c->researchPoints     = 0.0f;
-    c->rpPerTick          = 1.0f;
+    c->rpPerTick          = 2.5f;     /* 40 days per phase instead of 100 */
 }
 
 /*

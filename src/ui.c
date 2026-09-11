@@ -94,9 +94,22 @@ UIAction UI_DrawGameplayHUD(const GameStats *stats) {
     snprintf(budgetText, sizeof(budgetText), "Budget: $%d", stats->budget);
     DrawText(budgetText, 510, 20, 20, DARKGREEN);
 
+    char rateText[64];
+    snprintf(rateText, sizeof(rateText), "+$%.1f/day", stats->fundingRate);
+    DrawText(rateText, 510, 38, 14, DARKGREEN);
+
     char dayText[32];
     snprintf(dayText, sizeof(dayText), "Day %d", stats->dayCount);
     DrawText(dayText, 700, 20, 20, BLACK);
+
+    char researchText[64];
+    snprintf(researchText, sizeof(researchText), "Research: +%.2f/day", stats->researchRate);
+    DrawText(researchText, 850, 20, 16, DARKBLUE);
+
+    char stabilityText[64];
+    snprintf(stabilityText, sizeof(stabilityText), "Stability: %.0f%%", stats->stability * 100.0f);
+    Color stabColor = stats->stability >= 0.7f ? DARKGREEN : (stats->stability >= 0.5f ? ORANGE : RED);
+    DrawText(stabilityText, 850, 38, 16, stabColor);
 
     Rectangle btn1x    = { (float)screenWidth - 240, 15, 40, 30 }; //bujhtehobe
     Rectangle btn2x    = { (float)screenWidth - 190, 15, 40, 30 };
@@ -179,19 +192,19 @@ void UI_DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *stats) 
     DrawText(borderStatus, (int)bounds.x + 15, (int)bounds.y + 190, 16, statusColor);
 
     Rectangle fundBtn = { bounds.x + 15, bounds.y + 230, bounds.width - 30, 35 };
-    if (DrawUIButton(fundBtn, "Fund Research ($500)", DARKGREEN, GREEN)) {
-        if (stats->budget >= 500) {
-            stats->budget -= 500;
-            region->cureResearch += 5.0f;
+    if (DrawUIButton(fundBtn, "Fund Research ($200)", DARKGREEN, GREEN)) {
+        if (stats->budget >= 200) {
+            stats->budget -= 200;
+            region->cureResearch += 10.0f;
             if (region->cureResearch > 100.0f) region->cureResearch = 100.0f;
         }
     }
 
-    const char *toggleLabel = region->bordersClosed ? "Reopen Borders" : "Close Borders ($200)";
+    const char *toggleLabel = region->bordersClosed ? "Reopen Borders" : "Close Borders ($100)";
     Rectangle borderBtn = { bounds.x + 15, bounds.y + 275, bounds.width - 30, 35 };
     if (DrawUIButton(borderBtn, toggleLabel, MAROON, RED)) {
-        if (!region->bordersClosed && stats->budget >= 200) {
-            stats->budget -= 200;
+        if (!region->bordersClosed && stats->budget >= 100) {
+            stats->budget -= 100;
             region->bordersClosed = true;
         } else if (region->bordersClosed) {
             region->bordersClosed = false;
@@ -239,6 +252,9 @@ void UI_DrawGameplay(GameState *gs, Rectangle regionNode) {
     stats.budget          = (int)gs->cure.funding;
     stats.dayCount        = gs->day;
     stats.gameSpeed       = (gs->screen == SCREEN_PAUSED) ? 0 : gs->gameSpeed;
+    stats.fundingRate     = gs->cure.fundingPerTick;
+    stats.researchRate    = gs->cure.rpPerTick;
+    stats.stability       = gs->cure.stability;
 
     UIAction hudAction = UI_DrawGameplayHUD(&stats);
     if (hudAction == UI_SPEED_1)      { gs->gameSpeed = 1; gPausedSpeedBackup = 1; }
@@ -259,7 +275,7 @@ void UI_DrawGameplay(GameState *gs, Rectangle regionNode) {
     gRegionPanelOpen   = rd.isSelected;
     sel->cureResearch  = rd.cureResearch;
     sel->bordersClosed = rd.bordersClosed;
-    gs->cure.funding   = (float)stats.budget;
+    /* REMOVED: gs->cure.funding = (float)stats.budget; - was overwriting event changes */
 
     if (gs->screen == SCREEN_PAUSED) {
         UIAction pauseAction = UI_DrawPauseOverlay();

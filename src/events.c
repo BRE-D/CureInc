@@ -59,11 +59,22 @@ void events_init(GameState *gs)
         gs->eventLog[i].timer = 0;
     }
     gs->eventCount = 0;
+    gs->lastEventIndex = -1; /* No previous event */
 }
 
 void events_trigger_random(GameState *gs)
 {
-    int pick = GetRandomValue(0, POOL_SIZE - 1);
+    int pick;
+    int attempts = 0;
+    
+    /* Try to pick a different event than the last one */
+    do {
+        pick = GetRandomValue(0, POOL_SIZE - 1);
+        attempts++;
+    } while (pick == gs->lastEventIndex && attempts < 5);
+    
+    gs->lastEventIndex = pick; /* Remember this event */
+    
     //find free slot and put event
     for (int i = 0; i < MAX_EVENTS; i++)
     {
@@ -140,8 +151,22 @@ void events_trigger_random(GameState *gs)
             }
             break;
 
+        case 13: /* "Winter is coming" - cold-adapted strain boosts infection in cold regions */
+            gs->virus.activeTraits |= TRAIT_COLD_ADAPTED;
+            gs->virus.infectivity += 0.08f;
+            /* Boost infection in cold climate regions */
+            for (int r = 0; r < MAX_REGIONS; r++)
+            {
+                if (gs->regions[r].climate == CLIMATE_COLD)
+                {
+                    gs->regions[r].infected += 0.03f;
+                    if (gs->regions[r].infected > 1.0f) gs->regions[r].infected = 1.0f;
+                }
+            }
+            break;
+
         default:
-            /* Events 0, 9, 13 are informational only */
+            /* Events 0, 9 are informational only */
             break;
     }
 }
