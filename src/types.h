@@ -109,6 +109,12 @@ typedef struct {
   float fundingPerTick;    /* funding sanctioned per game-day                                    */
   float researchPoints;    /* current Science  Wallet,only snactioned for inside the global SkillNode         */
   float rpPerTick;         /* researchPoints sanctioned per game-day                            */
+
+  /* Gameplay systems for player decisions */
+  int   scientistCount;    /* number of hired scientists                 */
+  int   labLevel;          /* research lab upgrade level (0-3)           */
+  int   productionLevel;   /* production facility upgrade level (0-3)    */
+  float vaccineStockpile;  /* accumulated vaccine doses ready for distribution */
 } CureState;
 
 /*
