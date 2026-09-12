@@ -53,7 +53,7 @@ void cure_update(GameState *gs, float dtDays)
         /* Research phases: Discovery and Trials */
         float regionalBoost = 0.0f;
         for (int i = 0; i < MAX_REGIONS; i++) {
-            regionalBoost += gs->regions[i].cureResearch * 0.01f;
+            regionalBoost += gs->regions[i].cureResearch * 0.02f;
         }
         
         /* Research progress: base rate + regional boost + scientist/lab bonuses, scaled by stability */
