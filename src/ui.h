@@ -34,6 +34,7 @@ typedef struct GameStats {
     float fundingRate;      // funding per day
     float researchRate;     // research points per day
     float stability;        // cure stability 0.0-1.0
+    ResearchPhase curePhase; // current cure development phase
 } GameStats;
 
 typedef struct RegionData {

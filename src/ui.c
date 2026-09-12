@@ -269,13 +269,31 @@ UIAction UI_DrawMainMenu(GameScreen currentState)
 UIAction UI_DrawGameplayHUD(const GameStats *stats) {
     int screenWidth = GetScreenWidth();
 
-    Rectangle headerBar = { 0, 0, (float)screenWidth, 60 };
+    Rectangle headerBar = { 0, 0, (float)screenWidth, 72 };
     DrawUIPanel(headerBar, LIGHTGRAY, GRAY, 2.0f);
 
-    Rectangle cureBarBounds = { 20, 15, 220, 30 };
+    Rectangle cureBarBounds = { 20, 10, 220, 28 };
     DrawProgressBar(cureBarBounds, stats->cureProgress, BLUE, DARKGRAY, "Cure");
+    
+    /* Draw cure stage indicator below the progress bar */
+    static const char *phaseNames[] = { "Discovery", "Trials", "Production", "Distribution" };
+    const char *currentPhase = phaseNames[stats->curePhase];
+    Color phaseColors[] = { DARKBLUE, BLUE, SKYBLUE, DARKGREEN };
+    Color phaseColor = phaseColors[stats->curePhase];
+    
+    /* Draw small badge with current phase */
+    Rectangle phaseBadge = { 20, 42, 220, 18 };
+    DrawRectangleRec(phaseBadge, Fade(phaseColor, 0.3f));
+    DrawRectangleLinesEx(phaseBadge, 1.0f, phaseColor);
+    
+    int phaseTextSize = 11;
+    char phaseText[32];
+    snprintf(phaseText, sizeof(phaseText), "Phase: %s", currentPhase);
+    int phaseTextWidth = MeasureText(phaseText, phaseTextSize);
+    DrawText(phaseText, (int)(phaseBadge.x + (phaseBadge.width - phaseTextWidth) / 2), 
+             (int)phaseBadge.y + 3, phaseTextSize, phaseColor);
 
-    Rectangle infectBarBounds = { 260, 15, 220, 30 };
+    Rectangle infectBarBounds = { 260, 10, 220, 28 };
     DrawProgressBar(infectBarBounds, stats->globalInfection, RED, DARKGRAY, "Infected");
 
     char budgetText[32];
@@ -459,7 +477,19 @@ void UI_DrawGameplay(GameState *gs, Rectangle regionNode) {
     }
 
     GameStats stats = {0};
-    stats.cureProgress    = gs->cure.researchProgress;
+    /* Calculate overall cure progress across all phases (0-100%) */
+    float overallProgress = 0.0f;
+    if (gs->cure.phase == PHASE_DISCOVERY) {
+        overallProgress = gs->cure.researchProgress * 0.25f; /* 0-25% */
+    } else if (gs->cure.phase == PHASE_TRIALS) {
+        overallProgress = 25.0f + (gs->cure.researchProgress * 0.25f); /* 25-50% */
+    } else if (gs->cure.phase == PHASE_PRODUCTION) {
+        overallProgress = 50.0f + (gs->cure.researchProgress * 0.25f); /* 50-75% */
+    } else if (gs->cure.phase == PHASE_DISTRIBUTION) {
+        overallProgress = 75.0f + (gs->cure.globalDistributed * 25.0f); /* 75-100% */
+    }
+    
+    stats.cureProgress    = overallProgress;
     stats.globalInfection = gs->virus.globalInfected * 100.0f;
     stats.budget          = (int)gs->cure.funding;
     stats.dayCount        = gs->day;
@@ -467,6 +497,7 @@ void UI_DrawGameplay(GameState *gs, Rectangle regionNode) {
     stats.fundingRate     = gs->cure.fundingPerTick;
     stats.researchRate    = gs->cure.rpPerTick;
     stats.stability       = gs->cure.stability;
+    stats.curePhase       = gs->cure.phase;
 
     UIAction hudAction = UI_DrawGameplayHUD(&stats);
     if (hudAction == UI_SPEED_1)      { gs->gameSpeed = 1; gPausedSpeedBackup = 1; }
