@@ -362,18 +362,18 @@ static UIAction DrawLabBody(Rectangle area, const CureState *c) {
     Rectangle upgradeBtn = { area.x, y + 40, area.width, 32 };
     Rectangle prodBtn    = { area.x, y + 80, area.width, 32 };
 
-    if (DrawUIButton(hireBtn, "Hire Scientist ($150)", DARKBLUE, SKYBLUE))       
+    if (DrawUIButton(hireBtn, "Hire Scientist ($100)", DARKBLUE, SKYBLUE))       
         action = UI_HIRE_SCIENTIST;
     
     const char *labBtnText = (c->labLevel >= 3) ? "Lab Maxed" : 
-        (c->labLevel == 2) ? "Upgrade Lab ($900)" :
-        (c->labLevel == 1) ? "Upgrade Lab ($600)" : "Upgrade Lab ($300)";
+        (c->labLevel == 2) ? "Upgrade Lab ($450)" :
+        (c->labLevel == 1) ? "Upgrade Lab ($300)" : "Upgrade Lab ($150)";
     if (DrawUIButton(upgradeBtn, labBtnText, DARKBLUE, SKYBLUE))       
         action = UI_UPGRADE_LAB;
     
     const char *prodBtnText = (c->productionLevel >= 3) ? "Production Maxed" :
-        (c->productionLevel == 2) ? "Upgrade Prod ($1200)" :
-        (c->productionLevel == 1) ? "Upgrade Prod ($800)" : "Upgrade Prod ($400)";
+        (c->productionLevel == 2) ? "Upgrade Prod ($600)" :
+        (c->productionLevel == 1) ? "Upgrade Prod ($400)" : "Upgrade Prod ($200)";
     if (DrawUIButton(prodBtn, prodBtnText, DARKBLUE, SKYBLUE)) 
         action = UI_INCREASE_PRODUCTION;
 

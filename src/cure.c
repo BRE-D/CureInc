@@ -16,10 +16,10 @@ void cure_init(CureState *c)
     c->effectiveness      = 0.0f;
     c->productionRate     = 0.0f;
     c->globalDistributed  = 0.0f;
-    c->funding            = 500.0f;    /* Start with enough for immediate actions */
-    c->fundingPerTick     = 25.0f;    /* Faster income - 20 days to afford regional funding */
+    c->funding            = 200.0f;    /* Start with some initial funding */
+    c->fundingPerTick     = 50.0f;    /* Much faster income - 2 days for first scientist */
     c->researchPoints     = 0.0f;
-    c->rpPerTick          = 2.5f;     /* 40 days per phase instead of 100 */
+    c->rpPerTick          = 5.0f;     /* Faster base research - 20 days per phase */
     
     /* Initialize gameplay systems */
     c->scientistCount     = 0;
@@ -129,12 +129,12 @@ void cure_update(GameState *gs, float dtDays)
 
 /*
  * cure_hire_scientist - Hire a scientist to boost research speed.
- *                       Cost: 150 funding per scientist.
+ *                       Cost: 100 funding per scientist.
  *                       Effect: +10% research speed per scientist.
  */
 int cure_hire_scientist(CureState *c)
 {
-    const float SCIENTIST_COST = 150.0f;
+    const float SCIENTIST_COST = 100.0f;
     
     if (c->funding >= SCIENTIST_COST)
     {
@@ -147,7 +147,7 @@ int cure_hire_scientist(CureState *c)
 
 /*
  * cure_upgrade_lab - Upgrade research lab to boost research speed.
- *                    Cost: 300 * (level + 1) funding.
+ *                    Cost: 150 * (level + 1) funding.
  *                    Effect: +15% research speed per level.
  *                    Max level: 3
  */
@@ -158,7 +158,7 @@ int cure_upgrade_lab(CureState *c)
     if (c->labLevel >= MAX_LAB_LEVEL)
         return 0; /* already at max level */
     
-    float cost = 300.0f * (c->labLevel + 1);
+    float cost = 150.0f * (c->labLevel + 1);
     
     if (c->funding >= cost)
     {
@@ -171,7 +171,7 @@ int cure_upgrade_lab(CureState *c)
 
 /*
  * cure_upgrade_production - Upgrade vaccine production facility.
- *                           Cost: 400 * (level + 1) funding.
+ *                           Cost: 200 * (level + 1) funding.
  *                           Effect: +0.5 doses/day per level.
  *                           Max level: 3
  */
@@ -182,7 +182,7 @@ int cure_upgrade_production(CureState *c)
     if (c->productionLevel >= MAX_PRODUCTION_LEVEL)
         return 0; /* already at max level */
     
-    float cost = 400.0f * (c->productionLevel + 1);
+    float cost = 200.0f * (c->productionLevel + 1);
     
     if (c->funding >= cost)
     {
