@@ -12,4 +12,6 @@ void events_trigger_random(GameState *gs);
 //ticks event timers and removes expired ones
 void events_update(GameState *gs, float delta);
 
+void events_add(GameState *gs, const char *title, const char *description);
+
 #endif
