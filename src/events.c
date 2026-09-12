@@ -97,7 +97,7 @@ void events_trigger_random(GameState *gs)
             break;
 
         case 5: /* "Lab Breakthrough" */
-            gs->cure.researchProgress += 15.0f;
+            gs->cure.researchProgress += 5.0f;
             break;
 
         case 6: /* "Budget cuts" */
@@ -126,7 +126,7 @@ void events_trigger_random(GameState *gs)
             break;
 
         case 12: /* "Medical Miracle" */
-            gs->cure.researchProgress += 25.0f;
+            gs->cure.researchProgress += 5.0f;
             gs->cure.rpPerTick += 0.5f;
             break;
 

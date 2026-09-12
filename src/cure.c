@@ -19,7 +19,7 @@ void cure_init(CureState *c)
     c->funding            = 50.0f;     /* Start with minimal funding */
     c->fundingPerTick     = 10.0f;    /* Income - 10 days for first scientist */
     c->researchPoints     = 0.0f;
-    c->rpPerTick          = 0.8f;     /* Slow base research - needs investment to progress at good pace */
+    c->rpPerTick          = 0.5f;     /* Very slow base research - requires investment to progress */
     
     /* Initialize gameplay systems */
     c->scientistCount     = 0;
