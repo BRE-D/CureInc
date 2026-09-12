@@ -37,7 +37,7 @@ static Event eventPool[POOL_SIZE] =
         "WHO Alert", "Global health authority raises threat level to High--", 0, 0 
     },
     {
-        "Supply Chain Collapse", "Port closures reduce daily vaccine production.", 0, 0 
+        "Supply Chain Collapse", "Port closures destroy half of the vaccine stockpile", 0, 0 
     },
     {
         "Political Infighting", "Member nations prioritize hoarding; global solidarity dissolves--", 0, 0
@@ -113,17 +113,17 @@ void events_trigger_random(GameState *gs)
             break;
 
         case 8: /* Supply Disruption */
-            gs->cure.productionRate *= 0.90f;
-            if (gs->cure.productionRate < 10000.0f)
-                gs->cure.productionRate = 10000.0f;
+            gs->cure.vaccineStockpile *= 0.90f;
             break;
 
         case 10: /* Supply Chain Collapse */
-            gs->cure.productionRate *= 0.50f;
-            if (gs->cure.productionRate < 10000.0f)
-                gs->cure.productionRate = 10000.0f;
+            gs->cure.vaccineStockpile *= 0.50f;
+
             gs->cure.fundingPerTick -= 2.0f;
-            if (gs->cure.fundingPerTick < 0.5f) gs->cure.fundingPerTick = 0.5f;
+
+            if (gs->cure.fundingPerTick < 0.5f)
+                gs->cure.fundingPerTick = 0.5f;
+
             break;
 
         case 11: /* "Political Infighting" */
