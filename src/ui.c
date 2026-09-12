@@ -1,6 +1,7 @@
 #include "ui.h"
 #include <stdio.h>
 #include "virus.h"
+#include "cure.h"
 #include <string.h>
 
 static bool gRegionPanelOpen   = false;
@@ -262,7 +263,17 @@ void UI_DrawGameplay(GameState *gs, Rectangle regionNode) {
     UI_DrawEventLog(gs);
 
     UIAction labAction = UI_DrawInfoPanel(gs);
-    (void)labAction;
+    
+    /* Handle lab panel actions */
+    if (labAction == UI_HIRE_SCIENTIST) {
+        cure_hire_scientist(&gs->cure);
+    }
+    else if (labAction == UI_UPGRADE_LAB) {
+        cure_upgrade_lab(&gs->cure);
+    }
+    else if (labAction == UI_INCREASE_PRODUCTION) {
+        cure_upgrade_production(&gs->cure);
+    }
 
     GameStats stats = {0};
     stats.cureProgress    = gs->cure.researchProgress;
@@ -324,16 +335,47 @@ UIAction UI_DrawEndScreen(GameScreen screen) {
     return UI_NONE;
 }
 
-static UIAction DrawLabBody(Rectangle area) {
+static UIAction DrawLabBody(Rectangle area, const CureState *c) {
     UIAction action = UI_NONE;
+    float y = area.y;
 
-    Rectangle hireBtn    = { area.x, area.y,      area.width, 32 };
-    Rectangle upgradeBtn = { area.x, area.y + 40, area.width, 32 };
-    Rectangle prodBtn    = { area.x, area.y + 80, area.width, 32 };
+    /* Display current stats */
+    char buf[64];
+    snprintf(buf, sizeof(buf), "Scientists: %d", c->scientistCount);
+    DrawText(buf, (int)area.x, (int)y, 14, DARKGRAY);
+    y += 18;
 
-    if (DrawUIButton(hireBtn, "Hire Scientist", DARKBLUE, SKYBLUE))       action = UI_HIRE_SCIENTIST;
-    if (DrawUIButton(upgradeBtn, "Upgrade Lab", DARKBLUE, SKYBLUE))       action = UI_UPGRADE_LAB;
-    if (DrawUIButton(prodBtn, "Increase Production", DARKBLUE, SKYBLUE)) action = UI_INCREASE_PRODUCTION;
+    snprintf(buf, sizeof(buf), "Lab Level: %d/3", c->labLevel);
+    DrawText(buf, (int)area.x, (int)y, 14, DARKGRAY);
+    y += 18;
+
+    snprintf(buf, sizeof(buf), "Production Level: %d/3", c->productionLevel);
+    DrawText(buf, (int)area.x, (int)y, 14, DARKGRAY);
+    y += 18;
+
+    snprintf(buf, sizeof(buf), "Vaccine Stock: %.1f", c->vaccineStockpile);
+    DrawText(buf, (int)area.x, (int)y, 14, DARKGRAY);
+    y += 26;
+
+    /* Buttons with costs */
+    Rectangle hireBtn    = { area.x, y,      area.width, 32 };
+    Rectangle upgradeBtn = { area.x, y + 40, area.width, 32 };
+    Rectangle prodBtn    = { area.x, y + 80, area.width, 32 };
+
+    if (DrawUIButton(hireBtn, "Hire Scientist ($150)", DARKBLUE, SKYBLUE))       
+        action = UI_HIRE_SCIENTIST;
+    
+    const char *labBtnText = (c->labLevel >= 3) ? "Lab Maxed" : 
+        (c->labLevel == 2) ? "Upgrade Lab ($900)" :
+        (c->labLevel == 1) ? "Upgrade Lab ($600)" : "Upgrade Lab ($300)";
+    if (DrawUIButton(upgradeBtn, labBtnText, DARKBLUE, SKYBLUE))       
+        action = UI_UPGRADE_LAB;
+    
+    const char *prodBtnText = (c->productionLevel >= 3) ? "Production Maxed" :
+        (c->productionLevel == 2) ? "Upgrade Prod ($1200)" :
+        (c->productionLevel == 1) ? "Upgrade Prod ($800)" : "Upgrade Prod ($400)";
+    if (DrawUIButton(prodBtn, prodBtnText, DARKBLUE, SKYBLUE)) 
+        action = UI_INCREASE_PRODUCTION;
 
     return action;
 }
@@ -430,9 +472,9 @@ UIAction UI_DrawInfoPanel(GameState *gs) {
 
     UIAction action = UI_NONE;
     switch (gActiveInfoTab) {
-        case INFO_TAB_LAB:      action = DrawLabBody(bodyArea);        break;
-        case INFO_TAB_VIRUS:    DrawVirusBody(bodyArea, &gs->virus);   break;
-        case INFO_TAB_RESEARCH: DrawResearchBody(bodyArea, &gs->cure); break;
+        case INFO_TAB_LAB:      action = DrawLabBody(bodyArea, &gs->cure); break;
+        case INFO_TAB_VIRUS:    DrawVirusBody(bodyArea, &gs->virus);       break;
+        case INFO_TAB_RESEARCH: DrawResearchBody(bodyArea, &gs->cure);     break;
     }
 
     return action;
