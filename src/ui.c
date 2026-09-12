@@ -736,8 +736,8 @@ static UIAction DrawLabBody(Rectangle area, const CureState *c) {
         action = UI_UPGRADE_LAB;
     
     const char *prodBtnText = (c->productionLevel >= 3) ? "Production Maxed" :
-        (c->productionLevel == 2) ? "Upgrade Prod ($600)" :
-        (c->productionLevel == 1) ? "Upgrade Prod ($400)" : "Upgrade Prod ($200)";
+        (c->productionLevel == 2) ? "Upgrade Production ($600)" :
+        (c->productionLevel == 1) ? "Upgrade Production ($400)" : "Upgrade Production ($200)";
     if (DrawUIButton(prodBtn, prodBtnText, DARKBLUE, SKYBLUE)) 
         action = UI_INCREASE_PRODUCTION;
 
