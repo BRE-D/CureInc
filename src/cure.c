@@ -16,10 +16,10 @@ void cure_init(CureState *c)
     c->effectiveness      = 0.0f;
     c->productionRate     = 0.0f;
     c->globalDistributed  = 0.0f;
-    c->funding            = 200.0f;    /* Start with some initial funding */
-    c->fundingPerTick     = 50.0f;    /* Much faster income - 2 days for first scientist */
+    c->funding            = 50.0f;     /* Start with minimal funding */
+    c->fundingPerTick     = 10.0f;    /* Income - 10 days for first scientist */
     c->researchPoints     = 0.0f;
-    c->rpPerTick          = 5.0f;     /* Faster base research - 20 days per phase */
+    c->rpPerTick          = 0.8f;     /* Slow base research - needs investment to progress at good pace */
     
     /* Initialize gameplay systems */
     c->scientistCount     = 0;
