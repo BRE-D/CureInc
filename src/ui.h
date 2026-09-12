@@ -9,13 +9,17 @@ typedef enum { //etar step onujayi shb chole
     UI_NONE = 0,
     UI_START_GAME,
     UI_MAIN_MENU,
+    UI_EXIT,
+
     UI_RESUME,
     UI_SPEED_1,
     UI_SPEED_2,
     UI_PAUSE,
+
     UI_FUND_RESEARCH,
     UI_TOGGLE_BORDERS,
     UI_UNLOCK_SKILL,
+
     UI_HIRE_SCIENTIST,
     UI_UPGRADE_LAB,
     UI_INCREASE_PRODUCTION
@@ -59,7 +63,7 @@ void     UI_DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *sta
 // Full-screen coordinators (Day 2)
 void     UI_DrawEventLog(const GameState *gs);
 void     UI_DrawGameplay(GameState *gs, Rectangle regionNode);
-UIAction UI_DrawEndScreen(GameScreen screen);
+UIAction UI_DrawEndScreen(const GameState *gs);
 UIAction UI_DrawPauseOverlay(void);
 UIAction UI_DrawInfoPanel(GameState *gs);
 void     UI_DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *stats, CureState *cure);

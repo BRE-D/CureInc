@@ -6,6 +6,7 @@
 
 static bool gRegionPanelOpen   = false;
 static int  gPausedSpeedBackup = 1;
+static bool gShowHowToPlay = false;
 typedef enum { INFO_TAB_LAB = 0, INFO_TAB_VIRUS, INFO_TAB_RESEARCH } InfoTab;
 static InfoTab gActiveInfoTab = INFO_TAB_LAB;
 
@@ -66,19 +67,201 @@ void DrawProgressBar(Rectangle bounds, float percentage, Color barColor, Color b
 }
 
 // Day 1: screen-level widgets — return intent, never mutate//
-UIAction UI_DrawMainMenu(GameScreen currentState) {
-    (void)currentState; // not used yet — kept for future menu logic
+UIAction UI_DrawMainMenu(GameScreen currentState)
+{
+    (void)currentState;
 
     int screenWidth = GetScreenWidth();
 
-    const char *title = "CURE INC.";
-    int titleWidth = MeasureText(title, 50);
-    DrawText(title, (screenWidth - titleWidth) / 2, 150, 50, DARKBLUE);
+    /* HOW TO PLAY SCREEN */
+    if (gShowHowToPlay)
+    {
+        const char *title = "HOW TO PLAY";
 
-    Rectangle startBtn = { (float)(screenWidth - 200) / 2, 300, 200, 50 };
-    if (DrawUIButton(startBtn, "START GAME", BLUE, SKYBLUE)) {
+        int titleWidth = MeasureText(title, 42);
+
+        DrawText(
+            title,
+            (screenWidth - titleWidth) / 2,
+            100,
+            42,
+            DARKBLUE
+        );
+
+
+        Rectangle panel = {
+            (float)(screenWidth - 700) / 2,
+            180,
+            700,
+            380
+        };
+
+        DrawUIPanel(
+            panel,
+            RAYWHITE,
+            DARKGRAY,
+            2.0f
+        );
+
+
+        DrawText(
+            "GOAL",
+            (int)panel.x + 30,
+            (int)panel.y + 30,
+            24,
+            DARKGREEN
+        );
+
+        DrawText(
+            "Develop and distribute a vaccine before humanity collapses.",
+            (int)panel.x + 30,
+            (int)panel.y + 65,
+            18,
+            BLACK
+        );
+
+
+        DrawText(
+            "HOW TO PLAY",
+            (int)panel.x + 30,
+            (int)panel.y + 115,
+            24,
+            DARKBLUE
+        );
+
+
+        DrawText(
+            "- Hire scientists to increase research speed.",
+            (int)panel.x + 40,
+            (int)panel.y + 155,
+            18,
+            BLACK
+        );
+
+        DrawText(
+            "- Upgrade your laboratory and vaccine production.",
+            (int)panel.x + 40,
+            (int)panel.y + 185,
+            18,
+            BLACK
+        );
+
+        DrawText(
+            "- Monitor infections, deaths and healthcare capacity.",
+            (int)panel.x + 40,
+            (int)panel.y + 215,
+            18,
+            BLACK
+        );
+
+        DrawText(
+            "- React to mutations and random world events.",
+            (int)panel.x + 40,
+            (int)panel.y + 245,
+            18,
+            BLACK
+        );
+
+        DrawText(
+            "- Reach 90% vaccination and reduce infection below 5%.",
+            (int)panel.x + 40,
+            (int)panel.y + 275,
+            18,
+            BLACK
+        );
+
+
+        Rectangle backBtn = {
+            (float)(screenWidth - 200) / 2,
+            600,
+            200,
+            50
+        };
+
+        if (DrawUIButton(
+                backBtn,
+                "BACK",
+                BLUE,
+                SKYBLUE))
+        {
+            gShowHowToPlay = false;
+        }
+
+        return UI_NONE;
+    }
+
+
+    /* MAIN MENU */
+
+    const char *title = "CURE INC.";
+
+    int titleWidth = MeasureText(
+        title,
+        50
+    );
+
+    DrawText(
+        title,
+        (screenWidth - titleWidth) / 2,
+        150,
+        50,
+        DARKBLUE
+    );
+
+
+    Rectangle playBtn = {
+        (float)(screenWidth - 220) / 2,
+        300,
+        220,
+        50
+    };
+
+    Rectangle helpBtn = {
+        (float)(screenWidth - 220) / 2,
+        370,
+        220,
+        50
+    };
+
+    Rectangle exitBtn = {
+        (float)(screenWidth - 220) / 2,
+        440,
+        220,
+        50
+    };
+
+
+    if (DrawUIButton(
+            playBtn,
+            "PLAY",
+            DARKGREEN,
+            GREEN))
+    {
         return UI_START_GAME;
     }
+
+
+    if (DrawUIButton(
+            helpBtn,
+            "HOW TO PLAY",
+            BLUE,
+            SKYBLUE))
+    {
+        gShowHowToPlay = true;
+
+        return UI_NONE;
+    }
+
+
+    if (DrawUIButton(
+            exitBtn,
+            "EXIT",
+            MAROON,
+            RED))
+    {
+        return UI_EXIT;
+    }
+
 
     return UI_NONE;
 }
@@ -317,20 +500,201 @@ void UI_DrawGameplay(GameState *gs, Rectangle regionNode) {
     }
 }
 
-UIAction UI_DrawEndScreen(GameScreen screen) {
-    bool won = (screen == SCREEN_WIN);
+UIAction UI_DrawEndScreen(const GameState *gs)
+{
+    bool won = (gs->screen == SCREEN_WIN);
 
-    const char *message  = won ? "CURE DISTRIBUTED" : "HUMANITY HAS FALLEN";
-    Color       msgColor = won ? DARKGREEN : RED;
-    int         fontSize = won ? 34 : 40;
+    const char *title =
+        won ? "VICTORY" : "DEFEAT";
 
-    int textWidth = MeasureText(message, fontSize);
-    DrawText(message, (SCREEN_WIDTH - textWidth) / 2, 320, fontSize, msgColor);
+    const char *subtitle =
+        won ?
+        "Humanity has contained the outbreak." :
+        "Humanity could not contain the outbreak.";
 
-    Rectangle menuBtn = { (float)(SCREEN_WIDTH - 200) / 2, 420, 200, 50 };
-    if (DrawUIButton(menuBtn, "MAIN MENU", BLUE, SKYBLUE)) {
+    Color titleColor =
+        won ? DARKGREEN : RED;
+
+
+    int titleSize = 48;
+
+    int titleWidth =
+        MeasureText(title, titleSize);
+
+    DrawText(
+        title,
+        (SCREEN_WIDTH - titleWidth) / 2,
+        100,
+        titleSize,
+        titleColor
+    );
+
+
+    int subtitleWidth =
+        MeasureText(subtitle, 22);
+
+    DrawText(
+        subtitle,
+        (SCREEN_WIDTH - subtitleWidth) / 2,
+        165,
+        22,
+        DARKGRAY
+    );
+
+
+    Rectangle panel = {
+        (float)(SCREEN_WIDTH - 600) / 2,
+        220,
+        600,
+        340
+    };
+
+    DrawUIPanel(
+        panel,
+        RAYWHITE,
+        DARKGRAY,
+        2.0f
+    );
+
+
+    char buffer[128];
+
+    int x = (int)panel.x + 50;
+    int y = (int)panel.y + 35;
+
+
+    snprintf(
+        buffer,
+        sizeof(buffer),
+        "Days Survived: %d",
+        gs->day
+    );
+
+    DrawText(
+        buffer,
+        x,
+        y,
+        22,
+        BLACK
+    );
+
+    y += 45;
+
+
+    snprintf(
+        buffer,
+        sizeof(buffer),
+        "Total Deaths: %.1f%%",
+        gs->virus.globalDead * 100.0f
+    );
+
+    DrawText(
+        buffer,
+        x,
+        y,
+        22,
+        RED
+    );
+
+    y += 45;
+
+
+    snprintf(
+        buffer,
+        sizeof(buffer),
+        "Global Vaccinated: %.1f%%",
+        gs->cure.globalDistributed * 100.0f
+    );
+
+    DrawText(
+        buffer,
+        x,
+        y,
+        22,
+        DARKGREEN
+    );
+
+    y += 45;
+
+
+    snprintf(
+        buffer,
+        sizeof(buffer),
+        "Final Infection: %.1f%%",
+        gs->virus.globalInfected * 100.0f
+    );
+
+    DrawText(
+        buffer,
+        x,
+        y,
+        22,
+        MAROON
+    );
+
+    y += 45;
+
+
+    if (gs->cure.completionDay > 0)
+    {
+        snprintf(
+            buffer,
+            sizeof(buffer),
+            "Cure Completed: Day %d",
+            gs->cure.completionDay
+        );
+    }
+    else
+    {
+        snprintf(
+            buffer,
+            sizeof(buffer),
+            "Cure Completed: No"
+        );
+    }
+
+    DrawText(
+        buffer,
+        x,
+        y,
+        22,
+        DARKBLUE
+    );
+
+
+    /* Reason for victory/defeat */
+
+    if (gs->endReason != NULL)
+    {
+        int reasonWidth =
+            MeasureText(gs->endReason, 16);
+
+        DrawText(
+            gs->endReason,
+            (SCREEN_WIDTH - reasonWidth) / 2,
+            (int)panel.y + 285,
+            16,
+            DARKGRAY
+        );
+    }
+
+
+    Rectangle menuBtn = {
+        (float)(SCREEN_WIDTH - 220) / 2,
+        600,
+        220,
+        50
+    };
+
+    if (DrawUIButton(
+            menuBtn,
+            "MAIN MENU",
+            BLUE,
+            SKYBLUE))
+    {
         return UI_MAIN_MENU;
     }
+
 
     return UI_NONE;
 }

@@ -79,12 +79,13 @@ int main(void)
     InitUI();
 
     GameState state = {0};
+    bool exitRequested = false;
     state.screen              = SCREEN_MENU;
     state.selectedRegionIndex = 2;
 
     Rectangle regionNode = { 400, 300, 200, 40 };
 
-    while (!WindowShouldClose())
+    while (!WindowShouldClose() && !exitRequested)
     {
         float frameTime = GetFrameTime();
         float dt = frameTime * state.gameSpeed;
@@ -106,12 +107,22 @@ int main(void)
             ClearBackground(RAYWHITE);
             switch (state.screen)
             {
-                case SCREEN_MENU: {
-                    UIAction action = UI_DrawMainMenu(state.screen);
-                    if (action == UI_START_GAME) {
+                case SCREEN_MENU:
+                {
+                    UIAction action =
+                        UI_DrawMainMenu(state.screen);
+
+                    if (action == UI_START_GAME)
+                    {
                         state.screen = SCREEN_GAME;
                         reset_game(&state);
                     }
+
+                    else if (action == UI_EXIT)
+                    {
+                        exitRequested = true;
+                    }
+
                     break;
                 }
                 case SCREEN_GAME:
@@ -119,11 +130,12 @@ int main(void)
                     UI_DrawGameplay(&state, regionNode);
                     break;
                 case SCREEN_WIN:
-                case SCREEN_LOSE: {
-                    UIAction action = UI_DrawEndScreen(state.screen);
-                    if (action == UI_MAIN_MENU) {
-                        state.screen = SCREEN_MENU;
-                    }
+                case SCREEN_LOSE: 
+                {
+                    UIAction action = UI_DrawEndScreen(&state);
+
+                    if (action == UI_MAIN_MENU) state.screen = SCREEN_MENU;
+                    
                     break;
                 }
                 default: break;
