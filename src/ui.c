@@ -246,6 +246,9 @@ void UI_DrawGameplay(GameState *gs, Rectangle regionNode) {
 
     UI_DrawEventLog(gs);
 
+    UIAction labAction = UI_DrawLabPanel();
+    (void)labAction;
+    
     GameStats stats = {0};
     stats.cureProgress    = gs->cure.researchProgress;
     stats.globalInfection = gs->virus.globalInfected * 100.0f;
