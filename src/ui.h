@@ -60,5 +60,8 @@ void     UI_DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *sta
 void     UI_DrawEventLog(const GameState *gs);
 void     UI_DrawGameplay(GameState *gs, Rectangle regionNode);
 UIAction UI_DrawEndScreen(GameScreen screen);
+UIAction UI_DrawPauseOverlay(void);
+UIAction UI_DrawInfoPanel(GameState *gs);
+void     UI_DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *stats);
 
 #endif
