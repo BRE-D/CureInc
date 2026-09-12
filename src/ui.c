@@ -299,7 +299,8 @@ void UI_DrawGameplay(GameState *gs, Rectangle regionNode) {
     rd.isSelected    = gRegionPanelOpen;
 
     Rectangle panel = { (float)SCREEN_WIDTH - 320, 70, 300, 350 };
-    UI_DrawRegionPanel(panel, &rd, &stats, &gs->cure);
+    if (gs->screen == SCREEN_GAME)
+        UI_DrawRegionPanel(panel, &rd, &stats, &gs->cure);
 
     gRegionPanelOpen   = rd.isSelected;
     sel->cureResearch  = rd.cureResearch;

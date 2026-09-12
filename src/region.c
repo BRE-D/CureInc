@@ -126,6 +126,10 @@ void region_init(GameState *gs) {
   R(7).bordersClosed = 0;
 
 #undef R
+for (int i = 0; i < MAX_REGIONS; i++) {
+    gs->regions[i].dead = 0.0f;
+    gs->regions[i].overloadedDays = 0;
+}
 }
 
 /*
@@ -133,7 +137,7 @@ void region_init(GameState *gs) {
  *                        based on its current infected fraction.
  *
  * Thresholds:
- *   < 0.05  -> REGION_CLEAN
+ *   <= 0.000001 -> REGION_CLEAN
  *   < 0.30  -> REGION_INFECTED
  *   < 0.60  -> REGION_CRITICAL
  *   >= 0.60 -> REGION_DEVASTATED
@@ -148,7 +152,7 @@ void region_update_states(GameState *gs) {
   for (int i = 0; i < MAX_REGIONS; i++) {
     float inf = gs->regions[i].infected;
 
-    if (inf < 0.05f)
+    if (inf <= 0.000001f)
       gs->regions[i].state = REGION_CLEAN;
     else if (inf < 0.30f)
       gs->regions[i].state = REGION_INFECTED;

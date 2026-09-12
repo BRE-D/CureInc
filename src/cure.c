@@ -1,21 +1,17 @@
+/* cure.c */
 #include "cure.h"
+#include <stddef.h>
 
-/*
- * cure_init - Sets starting values for the cure research/production
- *             pipeline. Called once at the start of a new game.
- */
 void cure_init(CureState *c)
 {
-    c->phase             = PHASE_DISCOVERY;
-    c->researchProgress  = 0.0f;   
-    c->stability          = 1.0f;/* The cure begins at 100% stability. 
-                                    If a virus mutates rapidly,
-                                    this number might drop later,
-                                    rendering research volatile.
-                                   */
-    c->effectiveness      = 0.0f;
-    c->productionRate     = 0.0f;
+    c->phase              = PHASE_DISCOVERY;
+    c->researchProgress   = 0.0f;
+    c->stability          = 1.0f;
+    c->effectiveness      = 1.0f;
+    c->productionRate     = 1.0f;
     c->globalDistributed  = 0.0f;
+    c->completionDay      = 0;
+    
     c->funding            = 50.0f;     /* Start with minimal funding */
     c->fundingPerTick     = 10.0f;    /* Income - 10 days for first scientist */
     c->researchPoints     = 0.0f;
@@ -31,14 +27,13 @@ void cure_init(CureState *c)
 /*
  * cure_update - Advances the cure research pipeline through four phases.
  *               Research speed is affected by stability (virus mutations),
- *               scientist count, lab level, and regional research contributions.
+ *               virus resistance, scientist count, lab level, and regional research contributions.
  *               Production phase generates vaccine stockpile based on production level.
  *               Distribution phase deploys vaccines to reduce regional infections.
  */
 void cure_update(GameState *gs, float dtDays)
 {
     CureState *c = &gs->cure;
-    
     c->funding += c->fundingPerTick * dtDays;
     c->researchPoints += c->rpPerTick * dtDays;
 
@@ -48,6 +43,9 @@ void cure_update(GameState *gs, float dtDays)
     /* Calculate lab bonus: each level adds 15% to research speed */
     float labMultiplier = 1.0f + (c->labLevel * 0.15f);
 
+    /* Virus resistance slows down cure research */
+    float resistanceFactor = 1.0f - gs->virus.resistance * 0.5f;
+
     if (c->phase == PHASE_DISCOVERY || c->phase == PHASE_TRIALS)
     {
         /* Research phases: Discovery and Trials */
@@ -56,14 +54,16 @@ void cure_update(GameState *gs, float dtDays)
             regionalBoost += gs->regions[i].cureResearch * 0.02f;
         }
         
-        /* Research progress: base rate + regional boost + scientist/lab bonuses, scaled by stability */
+        /* Research progress: base rate + regional boost + scientist/lab bonuses, scaled by stability & resistance */
         float totalResearchRate = (c->rpPerTick + regionalBoost) * scientistMultiplier * labMultiplier;
-        c->researchProgress += totalResearchRate * c->stability * dtDays;
+        c->researchProgress += totalResearchRate * c->stability * resistanceFactor * dtDays;
 
-        if (c->researchProgress >= 100.0f)
-        {
+        if (c->researchProgress >= 100.0f) {
             c->researchProgress = 0.0f;
             c->phase++;
+            if (c->phase == PHASE_DISTRIBUTION && c->completionDay == 0) {
+                c->completionDay = gs->day;
+            }
         }
     }
     else if (c->phase == PHASE_PRODUCTION)
@@ -82,12 +82,19 @@ void cure_update(GameState *gs, float dtDays)
         if (c->vaccineStockpile >= 10.0f)
         {
             c->phase = PHASE_DISTRIBUTION;
-            c->effectiveness = c->stability; /* lock in final potency */
+            if (c->completionDay == 0) {
+                c->completionDay = gs->day;
+            }
+            c->effectiveness = c->stability * (1.0f - gs->virus.resistance * 0.25f); /* lock in final potency */
         }
     }
     else if (c->phase == PHASE_DISTRIBUTION)
     {
         /* Distribution phase: deploy vaccines to reduce infection */
+        if (c->completionDay == 0) {
+            c->completionDay = gs->day;
+        }
+        c->effectiveness = c->stability * (1.0f - gs->virus.resistance * 0.25f);
         
         /* Continue producing vaccines */
         c->productionRate = 1.0f + (c->productionLevel * 0.5f) + (c->scientistCount * 0.2f);
@@ -110,7 +117,7 @@ void cure_update(GameState *gs, float dtDays)
             }
             
             for (int i = 0; i < MAX_REGIONS; i++) {
-                float regionShare = gs->regions[i].population / totalPop;
+                float regionShare = (totalPop > 0.0f) ? (gs->regions[i].population / totalPop) : 0.0f;
                 float regionVaccines = distributionRate * regionShare;
                 gs->regions[i].vaccinated += regionVaccines;
                 
