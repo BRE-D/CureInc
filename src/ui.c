@@ -380,7 +380,7 @@ void UI_DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *stats, 
     DrawText(borderStatus, (int)bounds.x + 15, (int)bounds.y + 190, 16, statusColor);
 
     Rectangle fundBtn = { bounds.x + 15, bounds.y + 230, bounds.width - 30, 35 };
-    if (DrawUIButton(fundBtn, "Fund Research ($100)", DARKGREEN, GREEN)) {
+    if (DrawUIButton(fundBtn, "Fund Local Research ($100)", DARKGREEN, GREEN)) {
         if (cure->funding >= 100) {
             cure->funding -= 100;
             region->cureResearch += 15.0f;
