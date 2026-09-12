@@ -13,7 +13,7 @@ static Event eventPool[POOL_SIZE] =
         "Funding Surge",  "Emergency relief package approved -- research budget increased--", 0, 0 
     },
     {
-        "Mutation Detected", "Analysts warn the pathogen has developed a new protein marker--", 0, 0 
+        "Mutation Watch", "Labs are monitoring the pathogen for new changes.", 0, 0 
     },
     {
         "Public Panic",  "Social media fuels mass hysteria, clinic queues double overnight--", 0, 0   
@@ -37,7 +37,7 @@ static Event eventPool[POOL_SIZE] =
         "WHO Alert", "Global health authority raises threat level to High--", 0, 0 
     },
     {
-        "Supply Chain Collapse", "Major ports shut down; vaccine distribution halts indefinitely--", 0, 0 
+        "Supply Chain Collapse", "Port closures reduce daily vaccine production.", 0, 0 
     },
     {
         "Political Infighting", "Member nations prioritize hoarding; global solidarity dissolves--", 0, 0
@@ -46,9 +46,24 @@ static Event eventPool[POOL_SIZE] =
         "Medical Miracle", "AI-driven drug discovery accelerates trial timelines by 30%--", 0, 0 
     },
     {
-        "Winter is coming", "A resistant, cold strain has quietly spread north for weeks--", 0, 0 
+        "Winter is coming", "Hospitals are preparing for colder weather.", 0, 0 
     }
 };
+
+void events_add(GameState *gs, const char *title, const char *description)
+{
+    int slot = 0;
+    for (int i = 0; i < MAX_EVENTS; i++) {
+        if (!gs->eventLog[i].active) {
+            slot = i;
+            break;
+        }
+        if (gs->eventLog[i].timer < gs->eventLog[slot].timer) slot = i;
+    }
+
+    if (!gs->eventLog[slot].active) gs->eventCount++;
+    gs->eventLog[slot] = (Event){title, description, 1, 8.0f};
+}
 
 void events_init(GameState *gs)
 {
@@ -75,19 +90,7 @@ void events_trigger_random(GameState *gs)
     
     gs->lastEventIndex = pick; /* Remember this event */
     
-    //find free slot and put event
-    for (int i = 0; i < MAX_EVENTS; i++)
-    {
-        if(gs->eventLog[i].active == 0)
-        {
-            gs->eventLog[i].title = eventPool[pick].title;
-            gs->eventLog[i].description = eventPool[pick].description;
-            gs->eventLog[i].active = 1;
-            gs->eventLog[i].timer = 8.0f;
-            gs->eventCount++;
-            break;
-        }
-    }
+    events_add(gs, eventPool[pick].title, eventPool[pick].description);
 
     /* Apply mechanical effects based on event type */
     switch (pick)
@@ -109,13 +112,16 @@ void events_trigger_random(GameState *gs)
             gs->cure.rpPerTick += 0.3f;
             break;
 
-        case 8: /* "Supply Disruption" */
-            gs->cure.globalDistributed -= 0.05f;
-            if (gs->cure.globalDistributed < 0.0f) gs->cure.globalDistributed = 0.0f;
+        case 8: /* Supply Disruption */
+            gs->cure.productionRate *= 0.90f;
+            if (gs->cure.productionRate < 10000.0f)
+                gs->cure.productionRate = 10000.0f;
             break;
 
-        case 10: /* "Supply Chain Collapse" */
-            gs->cure.productionRate *= 0.5f;
+        case 10: /* Supply Chain Collapse */
+            gs->cure.productionRate *= 0.50f;
+            if (gs->cure.productionRate < 10000.0f)
+                gs->cure.productionRate = 10000.0f;
             gs->cure.fundingPerTick -= 2.0f;
             if (gs->cure.fundingPerTick < 0.5f) gs->cure.fundingPerTick = 0.5f;
             break;
@@ -130,9 +136,8 @@ void events_trigger_random(GameState *gs)
             gs->cure.rpPerTick += 0.5f;
             break;
 
-        case 2: /* "Mutation Detected" */
-            gs->cure.stability -= 0.10f;
-            if (gs->cure.stability < 0.3f) gs->cure.stability = 0.3f;
+        case 2:  /* Mutation Watch: informational only */
+        case 13: /* Winter preparations: informational only */
             break;
 
         case 3: /* "Public Panic" */
@@ -148,20 +153,6 @@ void events_trigger_random(GameState *gs)
             {
                 gs->regions[r].borderControl += 0.10f;
                 if (gs->regions[r].borderControl > 1.0f) gs->regions[r].borderControl = 1.0f;
-            }
-            break;
-
-        case 13: /* "Winter is coming" - cold-adapted strain boosts infection in cold regions */
-            gs->virus.activeTraits |= TRAIT_COLD_ADAPTED;
-            gs->virus.infectivity += 0.08f;
-            /* Boost infection in cold climate regions */
-            for (int r = 0; r < MAX_REGIONS; r++)
-            {
-                if (gs->regions[r].climate == CLIMATE_COLD)
-                {
-                    gs->regions[r].infected += 0.03f;
-                    if (gs->regions[r].infected > 1.0f) gs->regions[r].infected = 1.0f;
-                }
             }
             break;
 

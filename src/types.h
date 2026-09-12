@@ -75,19 +75,25 @@ typedef enum {
  * Virus - biological state of the pathogen.
  */
 typedef struct {
-    float infectivity;      /* (base)spread per day                  */
-    float severity;         /* healthcare degradation per day  */
-    float resistance;       /* reduces final cure effectiveness (0-1)      */
-    float mutationRate;     /* probability of acquiring a new trait daily  */
-    int   activeTraits;     /* bitmask of active MutationTrait flags       */
-    float globalInfected;   /* fraction of total world population infected */
-    float globalDead;       /* cumulative fraction of population dead       */
- } Virus;
+    float infectivity;      /* transmission strength per day */
+    float severity;         /* daily death rate before healthcare adjustment */
+    float resistance;       /* slows research and reduces vaccine effectiveness */
+    float mutationRate;     /* daily mutation chance during days 20-29 */
+    float recoveryRate;     /* fraction of infected recovering each day(প্রতিদিন কত অংশ infected মানুষ সুস্থ হবে) */
 
+    int activeTraits;       /* bitmask of mutation traits */
+    int lastMutationDay;    /* 0 until the first mutation (আগের mutation-এর পর ২০–৩০ দিন হয়েছে কি না বুঝতে)*/
+    MutationTrait lastMutation;
+                            /*সর্বশেষ mutation-এর নাম দেখাতে*/
+
+    float globalInfected;   /* infected / original world population */
+    float globalDead;       /* cumulative dead / original world population */
+} Virus;
 /*
  * CureState - the full research and production pipeline.
  */
 typedef struct {
+  int completionDay;    /* day research unlocks distribution; 0 until then */
   ResearchPhase phase; 
   float researchProgress;   /*0-100,
                             shows how close scientists are to completing the current phase.
@@ -97,9 +103,7 @@ typedef struct {
   float stability;         /* 0-1, degrades when virus mutates           */
   float effectiveness;     /* 0-1,how well the vaccine halts the spread  */
   float productionRate;    /* doses manufactured per game-day            */
-  float globalDistributed; /* 0-1, represents total vaccinated population.
-                            When this hits 1.0 ,game is won!    
-                           */
+  float globalDistributed; /* protected/vaccinated fraction of living population */
 
   float funding;           /* current  wallet balance of a specific region's panel;budget=funding       */
   float fundingPerTick;    /* funding sanctioned per game-day                                    */
@@ -114,6 +118,8 @@ typedef struct {
   const char *name;
   float population;
   float infected;
+  float dead;           /* cumulative fraction of original regional population */
+  int   overloadedDays;   /* consecutive days with excess hospital demand */
   float vaccinated;
   float healthcareCapacity;
   float publicTrust;
@@ -171,7 +177,7 @@ typedef struct {
                                         (e.g., "Citadel Quarantine", "Raven Network")*/
 
     int       skillCount;              // The total number of skills loaded into the tree.
-
+    const char *endReason;            /* victory/defeat explanation; NULL during play */
     int   day;                        //The current day count of the pandemic 
     float dayTimer;                   //The countdown tracking the current day's progress (once it hits dayLength, the day ticks forward).    
     float dayLength;                  //How many real-world seconds make up one in-game day                

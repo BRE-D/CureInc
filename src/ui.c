@@ -270,7 +270,11 @@ void UI_DrawGameplay(GameState *gs, Rectangle regionNode) {
     rd.isSelected    = gRegionPanelOpen;
 
     Rectangle panel = { (float)SCREEN_WIDTH - 320, 70, 300, 350 };
-    UI_DrawRegionPanel(panel, &rd, &stats);
+    /* Apply only the amount spent; preserve the real funding balance. */
+    int budgetBefore = stats.budget;
+    if (gs->screen == SCREEN_GAME)
+        UI_DrawRegionPanel(panel, &rd, &stats);
+    gs->cure.funding -= (float)(budgetBefore - stats.budget);
 
     gRegionPanelOpen   = rd.isSelected;
     sel->cureResearch  = rd.cureResearch;

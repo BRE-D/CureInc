@@ -14,7 +14,8 @@ void cure_init(CureState *c)
                                     rendering research volatile.
                                    */
     c->effectiveness      = 0.0f;
-    c->productionRate     = 0.0f;
+    c->productionRate     = 30000.0f;
+    c->completionDay      = 0;
     c->globalDistributed  = 0.0f;
     c->funding            = 500.0f;    /* Start with enough for immediate actions */
     c->fundingPerTick     = 25.0f;    /* Faster income - 20 days to afford regional funding */
@@ -22,44 +23,48 @@ void cure_init(CureState *c)
     c->rpPerTick          = 2.5f;     /* 40 days per phase instead of 100 */
 }
 
-/*
- * cure_update - Advances the cure research pipeline through four phases.
- *               Research speed is affected by stability (virus mutations),
- *               and regional research contributions are aggregated to boost
- *               global progress. Distribution effectiveness depends on
- *               final stability value locked at the end of Phase 3.
+/* Advance research, then turn daily vaccine production into regional protection.
+ * Global coverage is calculated by virus_refresh_totals after this function.
  */
 void cure_update(GameState *gs, float dtDays)
 {
     CureState *c = &gs->cure;
-    
     c->funding += c->fundingPerTick * dtDays;
     c->researchPoints += c->rpPerTick * dtDays;
 
-    if (c->phase < PHASE_DISTRIBUTION)
-    {
-        /* Aggregate regional research contributions */
+    if (c->phase < PHASE_DISTRIBUTION) {
         float regionalBoost = 0.0f;
-        for (int i = 0; i < MAX_REGIONS; i++) {
+        for (int i = 0; i < MAX_REGIONS; i++)
             regionalBoost += gs->regions[i].cureResearch * 0.01f;
-        }
-        
-        /* Research progress: base rate + regional boost, scaled by stability */
-        c->researchProgress += (c->rpPerTick + regionalBoost) * c->stability * dtDays;
 
-        if (c->researchProgress >= 100.0f)
-        {
+        float resistanceFactor = 1.0f - gs->virus.resistance * 0.5f;
+        c->researchProgress += (c->rpPerTick + regionalBoost)
+            * c->stability * resistanceFactor * dtDays;
+
+        if (c->researchProgress >= 100.0f) {
             c->researchProgress = 0.0f;
             c->phase++;
-
             if (c->phase == PHASE_DISTRIBUTION)
-                c->effectiveness = c->stability; /* lock in final potency */
+                c->completionDay = gs->day;
         }
     }
-    else
-    {
-        /* PHASE_DISTRIBUTION: roll out doses globally */
-        c->globalDistributed += 0.02f * c->effectiveness * dtDays;
-        if (c->globalDistributed > 1.0f) c->globalDistributed = 1.0f;//victory
+
+    if (c->phase != PHASE_DISTRIBUTION) return;
+
+    c->effectiveness = c->stability * (1.0f - gs->virus.resistance * 0.25f);
+
+    float totalPopulation = 0.0f;
+    for (int i = 0; i < MAX_REGIONS; i++)
+        totalPopulation += gs->regions[i].population * 1000000.0f;
+    if (totalPopulation <= 0.0f) return;
+
+    float dailyShare = c->productionRate * dtDays / totalPopulation;
+    for (int i = 0; i < MAX_REGIONS; i++) {
+        Region *r = &gs->regions[i];
+        float healthy = 1.0f - r->infected - r->dead - r->vaccinated;
+        if (healthy < 0.0f) healthy = 0.0f;
+        float protectedToday = dailyShare * c->effectiveness;
+        if (protectedToday > healthy) protectedToday = healthy;
+        r->vaccinated += protectedToday;
     }
 }
