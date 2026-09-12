@@ -161,7 +161,7 @@ UIAction UI_DrawPauseOverlay(void) {
     return action;
 }
 
-void UI_DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *stats) {
+void UI_DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *stats, CureState *cure) {
     if (!region->isSelected) return;
 
     DrawUIPanel(bounds, RAYWHITE, DARKGRAY, 2.0f);
@@ -198,8 +198,8 @@ void UI_DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *stats) 
 
     Rectangle fundBtn = { bounds.x + 15, bounds.y + 230, bounds.width - 30, 35 };
     if (DrawUIButton(fundBtn, "Fund Research ($200)", DARKGREEN, GREEN)) {
-        if (stats->budget >= 200) {
-            stats->budget -= 200;
+        if (cure->funding >= 200) {
+            cure->funding -= 200;
             region->cureResearch += 10.0f;
             if (region->cureResearch > 100.0f) region->cureResearch = 100.0f;
         }
@@ -208,8 +208,8 @@ void UI_DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *stats) 
     const char *toggleLabel = region->bordersClosed ? "Reopen Borders" : "Close Borders ($100)";
     Rectangle borderBtn = { bounds.x + 15, bounds.y + 275, bounds.width - 30, 35 };
     if (DrawUIButton(borderBtn, toggleLabel, MAROON, RED)) {
-        if (!region->bordersClosed && stats->budget >= 100) {
-            stats->budget -= 100;
+        if (!region->bordersClosed && cure->funding >= 100) {
+            cure->funding -= 100;
             region->bordersClosed = true;
         } else if (region->bordersClosed) {
             region->bordersClosed = false;
@@ -299,12 +299,11 @@ void UI_DrawGameplay(GameState *gs, Rectangle regionNode) {
     rd.isSelected    = gRegionPanelOpen;
 
     Rectangle panel = { (float)SCREEN_WIDTH - 320, 70, 300, 350 };
-    UI_DrawRegionPanel(panel, &rd, &stats);
+    UI_DrawRegionPanel(panel, &rd, &stats, &gs->cure);
 
     gRegionPanelOpen   = rd.isSelected;
     sel->cureResearch  = rd.cureResearch;
     sel->bordersClosed = rd.bordersClosed;
-    /* REMOVED: gs->cure.funding = (float)stats.budget; - was overwriting event changes */
 
     if (gs->screen == SCREEN_PAUSED) {
         UIAction pauseAction = UI_DrawPauseOverlay();

@@ -54,7 +54,7 @@ void DrawProgressBar(Rectangle bounds, float percentage, Color barColor, Color b
 UIAction UI_DrawMainMenu(GameScreen currentState);
 UIAction UI_DrawGameplayHUD(const GameStats *stats);
 UIAction UI_DrawPauseOverlay(void);
-void     UI_DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *stats);
+void     UI_DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *stats, CureState *cure);
 
 // Full-screen coordinators (Day 2)
 void     UI_DrawEventLog(const GameState *gs);
@@ -62,6 +62,6 @@ void     UI_DrawGameplay(GameState *gs, Rectangle regionNode);
 UIAction UI_DrawEndScreen(GameScreen screen);
 UIAction UI_DrawPauseOverlay(void);
 UIAction UI_DrawInfoPanel(GameState *gs);
-void     UI_DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *stats);
+void     UI_DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *stats, CureState *cure);
 
 #endif
