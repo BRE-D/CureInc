@@ -106,7 +106,7 @@ UIAction UI_DrawMainMenu(GameScreen currentState) {
         const char *steps[] = {
             "- Start by hiring scientists to speed up research.",
             "- Then upgrade your lab to finish Discovery and Trials.",
-            "- After Trials, vaccines are produced and sent automatically.",
+            "-After Trials, vaccines are produced. Distribution starts when the stockpile is ready.",
             "- Upgrade production; pause any time to read and plan.",
             "- Protect 90% of survivors; keep their infections below 5%."
         };
@@ -532,11 +532,16 @@ UIAction UI_DrawEndScreen(const GameState *gs) {
     DrawText(text, x, 300, TextSizeToFit(text, 22, 500), RED);
     snprintf(text, sizeof(text), "Global Vaccinated: %.1f%%", gs->cure.globalDistributed * 100);
     DrawText(text, x, 345, 22, DARKGREEN);
-    snprintf(text, sizeof(text), "Final Infection: %.1f%%", gs->virus.globalInfected * 100);
+    
+    float living = 1.0f - gs->virus.globalDead;
+    float finalInfection =living > 0.0f? (gs->virus.globalInfected / living) * 100.0f: 0.0f;
+
+    snprintf(text, sizeof(text), "Final Infection: %.1f%%", finalInfection);
     DrawText(text, x, 390, 22, MAROON);
     if (gs->cure.completionDay > 0)
-        snprintf(text, sizeof(text), "Cure Completed: Day %d", gs->cure.completionDay);
-    else snprintf(text, sizeof(text), "Cure Completed: No");
+        snprintf(text, sizeof(text), "Distribution Started: Day %d", gs->cure.completionDay);
+    else
+        snprintf(text, sizeof(text), "Distribution Started: No");
     DrawText(text, x, 435, 22, DARKBLUE);
     if (gs->endReason != NULL)
         DrawText(gs->endReason, (SCREEN_WIDTH - MeasureText(gs->endReason, 16)) / 2, 505, 16, DARKGRAY);
