@@ -59,11 +59,12 @@ void DrawProgressBar(Rectangle bounds, float percentage, Color barColor, Color b
 UIAction UI_DrawMainMenu(GameScreen currentState);
 UIAction UI_DrawGameplayHUD(const GameStats *stats);
 UIAction UI_DrawPauseOverlay(void);
-void     UI_DrawRegionPanel(Rectangle bounds, RegionData *region, const Region *source, CureState *cure);
+void     UI_DrawRegionPanel(Rectangle bounds, RegionData *region, GameStats *stats, CureState *cure);
 
 // Full-screen coordinators 
 void     UI_DrawEventLog(const GameState *gs);
 void     UI_DrawGameplay(GameState *gs, Rectangle regionNode);
+void     UI_DrawTransition(GameScreen currentScreen);
 UIAction UI_DrawEndScreen(const GameState *gs);
 UIAction UI_DrawInfoPanel(GameState *gs);
 

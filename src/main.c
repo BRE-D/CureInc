@@ -9,38 +9,38 @@
 #include <stdlib.h>
 #include <time.h>
 
-/* Check win/lose conditions - Balanced for challenging but fair gameplay */
+// virus-system simulation
+
 static void check_win_lose(GameState *gs)
 {
     int collapsed = 0;
     for (int i = 0; i < MAX_REGIONS; i++)
-        if (gs->regions[i].overloadedDays >= 25) collapsed++;  /* Increased from 20 to give more time */
+        if (gs->regions[i].overloadedDays >= 30) collapsed++;
 
-    if (gs->virus.globalDead >= 0.35f) {  /* Increased from 0.30 to be less punishing */
+    if (gs->virus.globalDead >= 0.40f) {
         gs->screen = SCREEN_LOSE;
-        gs->endReason = "Deaths exceeded 35% of the population!";
-    } else if (collapsed >= 6) {
+        gs->endReason = "Deaths reached 40% of the original population.";
+    } else if (collapsed == MAX_REGIONS) {
         gs->screen = SCREEN_LOSE;
-        gs->endReason = "Healthcare system collapsed in 6+ regions!";
+        gs->endReason = "Every region has been overloaded for 30 days.";
     } else {
         float living = 1.0f - gs->virus.globalDead;
         if (living > 0.0f && gs->cure.phase == PHASE_DISTRIBUTION &&
-            gs->cure.globalDistributed >= 0.90f &&  /* Reduced from 0.95 to be more achievable */
-            gs->virus.globalInfected / living < 0.03f) {  /* Increased from 0.02 to be more forgiving */
+            gs->cure.globalDistributed >= 0.90f &&
+            gs->virus.globalInfected / living < 0.05f) {
             gs->screen = SCREEN_WIN;
-            gs->endReason = "Pandemic defeated! 90% vaccinated, infection below 3%!";
+            gs->endReason = "Vaccination reached 90% and infection fell below 5%.";
         }
     }
 }
 
-/* Day tick - runs once per game day */
 static void day_tick(GameState *gs)
 {
-    if (gs->day % 7 == 0) events_trigger_random(gs);  /* Changed back to 7 days for less chaos */
+    if (gs->day % 7 == 0) events_trigger_random(gs);
 
     if (virus_try_mutate(&gs->virus, gs->day)) {
-        gs->cure.stability -= 0.03f;  /* Reduced from 0.05 so mutations are less devastating */
-        if (gs->cure.stability < 0.60f) gs->cure.stability = 0.60f;  /* Increased floor from 0.50 */
+        gs->cure.stability -= 0.03f;
+        if (gs->cure.stability < 0.60f) gs->cure.stability = 0.60f;
         events_add(gs, "Virus Mutated", virus_trait_name(gs->virus.lastMutation));
     }
 
@@ -51,14 +51,13 @@ static void day_tick(GameState *gs)
     check_win_lose(gs);
 }
 
-/* Reset game state */
 static void reset_game(GameState *gs)
 {
     GameScreen keepScreen = gs->screen;
     *gs = (GameState){0};
-    gs->screen = keepScreen;
-    gs->dayLength = DEFAULT_DAY_LENGTH;
-    gs->gameSpeed = 1;
+    gs->screen              = keepScreen;
+    gs->dayLength           = DEFAULT_DAY_LENGTH;
+    gs->gameSpeed           = 1;
     gs->selectedRegionIndex = 2;
 
     virus_init(&gs->virus);
@@ -70,7 +69,8 @@ static void reset_game(GameState *gs)
     UI_ResetGameplayState();
 }
 
-/* Main function */
+// main
+
 int main(void)
 {
     srand((unsigned int)time(NULL));
@@ -82,39 +82,64 @@ int main(void)
     state.screen = SCREEN_MENU;
     state.selectedRegionIndex = 2;
     Rectangle regionNode = { 400, 300, 200, 40 };
+    bool exitRequested = false;
 
-    while (!WindowShouldClose())
+    while (!WindowShouldClose() && !exitRequested)
     {
-        float dt = GetFrameTime() * state.gameSpeed;
+        float frameTime = GetFrameTime();
+        float dt = frameTime * state.gameSpeed;
 
-        if (state.screen == SCREEN_GAME) {
+        if (state.screen == SCREEN_GAME)
+        {
             state.dayTimer += dt;
-            if (state.dayTimer >= state.dayLength) {
+            while (state.dayTimer >= state.dayLength &&
+                   state.screen == SCREEN_GAME)
+            {
                 state.dayTimer -= state.dayLength;
                 state.day++;
                 day_tick(&state);
             }
-            events_update(&state, GetFrameTime());
+            events_update(&state, frameTime);
         }
 
         BeginDrawing();
-        ClearBackground(RAYWHITE);
-        
-        if (state.screen == SCREEN_MENU) {
-            UIAction action = UI_DrawMainMenu(state.screen);
-            if (action == UI_START_GAME) {
-                state.screen = SCREEN_GAME;
-                reset_game(&state);
-            } else if (action == UI_EXIT) {
-                break;
+            ClearBackground(RAYWHITE);
+            switch (state.screen)
+            {
+                case SCREEN_MENU:
+                {
+                    UIAction action =
+                        UI_DrawMainMenu(state.screen);
+
+                    if (action == UI_START_GAME)
+                    {
+                        state.screen = SCREEN_GAME;
+                        reset_game(&state);
+                    }
+
+                    else if (action == UI_EXIT)
+                    {
+                        exitRequested = true;
+                    }
+
+                    break;
+                }
+                case SCREEN_GAME:
+                case SCREEN_PAUSED:
+                    UI_DrawGameplay(&state,regionNode);
+                    break;
+                case SCREEN_WIN:
+                case SCREEN_LOSE: 
+                {
+                    UIAction action = UI_DrawEndScreen(&state);
+
+                    if (action == UI_MAIN_MENU) state.screen = SCREEN_MENU;
+                    
+                    break;
+                }
+                default: break;
             }
-        } else if (state.screen == SCREEN_GAME || state.screen == SCREEN_PAUSED) {
-            UI_DrawGameplay(&state, regionNode);
-        } else if (state.screen == SCREEN_WIN || state.screen == SCREEN_LOSE) {
-            UIAction action = UI_DrawEndScreen(&state);
-            if (action == UI_MAIN_MENU) state.screen = SCREEN_MENU;
-        }
-        
+            UI_DrawTransition(state.screen);
         EndDrawing();
     }
 

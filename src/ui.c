@@ -548,6 +548,11 @@ void UI_DrawGameplay(GameState *gs, Rectangle regionNode) {
     }
 }
 
+void UI_DrawTransition(GameScreen currentScreen)
+{
+    (void)currentScreen; // TODO: implement fade/transition effect
+}
+
 UIAction UI_DrawEndScreen(const GameState *gs)
 {
     bool won = (gs->screen == SCREEN_WIN);
