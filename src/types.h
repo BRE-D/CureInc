@@ -130,7 +130,7 @@ typedef struct {
   float effectiveness;
   // Current vaccine capacity in units per game day; used after Trials.
   float productionRate;
-  // Protected people divided by living world population (0..1).
+  // vaccinated /living world population (0..1)
   float globalDistributed;
 
   // Shared spendable money for all global and regional purchases.
@@ -174,7 +174,7 @@ typedef struct {
   RegionClimate climate;
   // Local research points (0..100); boost global research and this region healthcare.
   float cureResearch;
-  // Whether player-ordered closure is active (1/true closed, 0/false open).
+  // Whether player-ordered closure is active (1 closed, 0 open).
   int bordersClosed;
 } Region;
 
@@ -209,7 +209,7 @@ typedef struct {
     int       lastEventIndex;
     // Read-only win/lose explanation; NULL until a result is decided.
     const char *endReason;
-    // Number of completed game days.
+              // Number of completed game days.
     int   day;
     // Accumulated frame seconds multiplied by game speed; whole days are removed from it.
     float dayTimer;
