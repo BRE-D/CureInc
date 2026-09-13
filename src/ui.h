@@ -63,8 +63,7 @@ void     UI_DrawRegionPanel(Rectangle bounds, RegionData *region, const Region *
 
 // Full-screen coordinators 
 void     UI_DrawEventLog(const GameState *gs);
-void     UI_DrawGameplay(GameState *gs);
-void     UI_DrawTransition(GameScreen currentScreen);
+void     UI_DrawGameplay(GameState *gs, Rectangle regionNode);
 UIAction UI_DrawEndScreen(const GameState *gs);
 UIAction UI_DrawInfoPanel(GameState *gs);
 
