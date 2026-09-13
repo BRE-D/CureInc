@@ -1,8 +1,10 @@
 #include "events.h"
 #include "raylib.h"
 
+// Number of possible random event templates.
 #define POOL_SIZE 14
 
+// Array of 14 possible event templates. Entries contain static text and initially inactive timers.
 static Event eventPool[POOL_SIZE] =
 {
     {"Outbreak Reported", "Fresh clusters add a small number of infections across the regions.", 0, 0},
@@ -21,10 +23,17 @@ static Event eventPool[POOL_SIZE] =
     {"Winter is coming", "Cold regions experience a small rise in infections.", 0, 0}
 };
 
-// খালি জায়গায় খবর রাখি; সব ভরা হলে সবচেয়ে আগে শেষ হবে এমন খবরটি সরাই।
+
+// Store an 8-second notification in the first free slot, or replace the active slot with least time
+// remaining. Increase active count only for a free slot. Text pointers must remain valid; returns nothing.
+// gs: shared game state; const means this function only reads it.
+// title: read-only notification title text.
+// description: read-only notification detail text.
 void events_add(GameState *gs, const char *title, const char *description)
 {
+    // Notification slot selected for insertion or replacement.
     int slot = 0;
+    // i: Zero-based index used to visit each item in this loop.
     for (int i = 0; i < MAX_EVENTS; i++) {
         if (!gs->eventLog[i].active) {
             slot = i;
@@ -37,10 +46,14 @@ void events_add(GameState *gs, const char *title, const char *description)
     gs->eventLog[slot] = (Event){title, description, 1, 8.0f};
 }
 
-// নতুন খেলার জন্য পুরোনো খবর ও আগের event মুছে দিই।
+
+// Clear active notifications and timers, reset their count, and forget the previous random event. Called
+// by reset_game; returns nothing.
+// gs: shared game state; const means this function only reads it.
 void events_init(GameState *gs)
 {
 
+    // i: Zero-based index used to visit each item in this loop.
     for (int i = 0; i < MAX_EVENTS; i++)
     {
         gs->eventLog[i].active = 0;
@@ -50,20 +63,25 @@ void events_init(GameState *gs)
     gs->lastEventIndex = -1;
 }
 
-// একটি random event বেছে তার নির্দিষ্ট প্রভাব প্রয়োগ করি।
+
+// Choose one of 14 events, try up to five times to avoid an immediate repeat, then log and apply it.
+// Research bonuses stop after Trials. Called every seven game days; returns nothing.
+// gs: shared game state; const means this function only reads it.
 void events_trigger_random(GameState *gs)
 {
+    // Index of the random event selected from eventPool.
     int pick;
+    // Number of random draws so far; retries stop at five.
     int attempts = 0;
 
     do {
         pick = GetRandomValue(0, POOL_SIZE - 1);
         attempts++;
-    } while (pick == gs->lastEventIndex && attempts < 5); // একই খবর এড়াতে সর্বোচ্চ ৫ চেষ্টা।
+    } while (pick == gs->lastEventIndex && attempts < 5);
 
     gs->lastEventIndex = pick;
 
-    // Research শেষ হলে তার bonus বা progress আর বদলাব না।
+
     if (gs->cure.phase >= PHASE_PRODUCTION && (pick == 5 || pick == 7 || pick == 12)) {
         events_add(gs, eventPool[pick].title, "Research is complete; no research bonus applied.");
         return;
@@ -72,43 +90,54 @@ void events_trigger_random(GameState *gs)
 
     switch (pick)
     {
-        case 0: // নতুন outbreak: প্রতিটি অঞ্চলে অল্প নতুন infection যোগ হয়।
+        // Outbreak: add up to 0.5 percentage points of infection in every region.
+        case 0:
+            // r: region index (0..7) for applying this event to each region.
             for (int r = 0; r < MAX_REGIONS; r++) {
+                // Susceptible fraction: original population minus infected, dead, and protected fractions.
                 float healthy = 1.0f - gs->regions[r].infected
                               - gs->regions[r].dead
                               - gs->regions[r].vaccinated;
                 if (healthy < 0.0f) healthy = 0.0f;
 
+                // Extra infected fraction from this outbreak, capped by available susceptible people.
                 float added = healthy < 0.005f ? healthy : 0.005f;
                 gs->regions[r].infected += added;
             }
             break;
 
-        case 1: // Funding Surge: প্রতিদিনের আয় বাড়ে।
+        // Funding Surge: add $2 to recurring daily income.
+        case 1:
             gs->cure.fundingPerTick += 2.0f;
             break;
 
-        case 5:  // Lab Breakthrough ও Medical Miracle-এর একই progress bonus।
+        // Breakthrough: share the 5-point research bonus with Medical Miracle.
+        case 5:
+        // Medical Miracle also adds 0.10 base research points/day.
         case 12:
             gs->cure.researchProgress += 5.0f;
             if (gs->cure.researchProgress > 100) gs->cure.researchProgress = 100;
             if (pick == 12) gs->cure.rpPerTick += 0.10f;
             break;
 
-        case 6: // Budget cuts: আয় কমে, কিন্তু নির্ধারিত সর্বনিম্নের নিচে নয়।
+        // Budget cuts: subtract $1.50/day, keeping income at least $0.50/day.
+        case 6:
             gs->cure.fundingPerTick -= 1.5f;
             if (gs->cure.fundingPerTick < 0.5f) gs->cure.fundingPerTick = 0.5f;
             break;
 
-        case 7: // Volunteer: মূল research/day অল্প বাড়ে।
+        // Volunteers: add 0.05 base research points/day.
+        case 7:
             gs->cure.rpPerTick += 0.05f;
             break;
 
-        case 8: // মজুত vaccine-এর ১০% নষ্ট হয়।
+        // Supply disruption: destroy 10% of stored vaccine units.
+        case 8:
             gs->cure.vaccineStockpile *= 0.90f;
             break;
 
-        case 10: // অর্ধেক মজুত নষ্ট এবং আয় কমে।
+        // Supply collapse: halve vaccine stock and subtract $2/day, with a $0.50/day minimum.
+        case 10:
             gs->cure.vaccineStockpile *= 0.50f;
 
             gs->cure.fundingPerTick -= 2.0f;
@@ -118,42 +147,53 @@ void events_trigger_random(GameState *gs)
 
             break;
 
-        case 11: // বর্তমান টাকা থেকে ৫০ কাটা হয়।
+        // Political infighting: remove up to $50 from current funding.
+        case 11:
             gs->cure.funding -= 50.0f;
             if (gs->cure.funding < 0.0f) gs->cure.funding = 0.0f;
             break;
 
-        case 2: // Mutation Watch: vaccine stability সামান্য বাড়ে।
+        // Mutation Watch: restore 2 stability percentage points, capped at 100%.
+        case 2:
             gs->cure.stability += 0.02f;
             if (gs->cure.stability > 1.0f) gs->cure.stability = 1.0f;
             break;
 
-        case 9: // WHO Alert: emergency support-এ দৈনিক funding বাড়ে।
+        // WHO Alert: add $1 to recurring daily income.
+        case 9:
             gs->cure.fundingPerTick += 1.0f;
             break;
 
-        case 13: // Winter: ঠান্ডা অঞ্চলে অল্প নতুন infection যোগ হয়।
+        // Winter: add up to 1 percentage point of infection only in cold regions.
+        case 13:
+            // r: region index (0..7) for applying this event to each region.
             for (int r = 0; r < MAX_REGIONS; r++) {
                 if (gs->regions[r].climate != CLIMATE_COLD) continue;
 
+                // Susceptible fraction: original population minus infected, dead, and protected fractions.
                 float healthy = 1.0f - gs->regions[r].infected
                               - gs->regions[r].dead
                               - gs->regions[r].vaccinated;
                 if (healthy < 0.0f) healthy = 0.0f;
 
+                // Extra infected fraction from this outbreak, capped by available susceptible people.
                 float added = healthy < 0.01f ? healthy : 0.01f;
                 gs->regions[r].infected += added;
             }
             break;
 
-        case 3: // Panic-এ সীমান্ত নিয়ন্ত্রণ কমে; এটি সময় শেষে নিজে থেকে ফেরে না।
+        // Panic: reduce every region baseline border control by 5 points; this persists.
+        case 3:
+            // r: region index (0..7) for applying this event to each region.
             for (int r = 0; r < MAX_REGIONS; r++) {
                 gs->regions[r].borderControl -= 0.05f;
                 if (gs->regions[r].borderControl < 0) gs->regions[r].borderControl = 0;
             }
             break;
 
-        case 4: // সব অঞ্চলে সীমান্ত নিয়ন্ত্রণ কিছুটা বাড়ে।
+        // Lockdown: raise every region baseline border control by 10 points, capped at 100%.
+        case 4:
+            // r: region index (0..7) for applying this event to each region.
             for (int r = 0; r < MAX_REGIONS; r++)
             {
                 gs->regions[r].borderControl += 0.10f;
@@ -167,9 +207,14 @@ void events_trigger_random(GameState *gs)
     }
 }
 
-// খবরের সময় কমাই; সময় শেষ হলে খবর লুকাই।
+
+// Subtract real frame time from active notification timers and hide expired entries. Called only during
+// gameplay, so pausing also freezes notices; returns nothing.
+// gs: shared game state; const means this function only reads it.
+// delta: elapsed real seconds since the previous frame.
 void events_update(GameState *gs, float delta)
 {
+    // i: Zero-based index used to visit each item in this loop.
     for (int i = 0; i < MAX_EVENTS; i++)
     {
         if (gs->eventLog[i].active)

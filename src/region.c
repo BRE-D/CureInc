@@ -1,6 +1,9 @@
 #include "region.h"
 
-// .name-এর মতো নাম ধরে মান বসাই; না লেখা field নিজে থেকেই ০ হয়।
+
+// Set the eight starting regions. Named initializers specify chosen fields; omitted fields become zero.
+// Seed infections in Westeros and Essos, then update region states; returns nothing.
+// gs: shared game state; const means this function only reads it.
 void region_init(GameState *gs) {
     gs->regions[0] = (Region){.name="The North", .population=.25f,
         .healthcareCapacity=.85f, .borderControl=.65f, .climate=CLIMATE_COLD};
@@ -18,12 +21,17 @@ void region_init(GameState *gs) {
         .healthcareCapacity=.90f, .borderControl=.95f, .climate=CLIMATE_COLD};
     gs->regions[7] = (Region){.name="The Dothraki Sea", .population=.70f,
         .healthcareCapacity=.20f, .borderControl=.10f, .climate=CLIMATE_HOT};
-    region_update_states(gs); // শুরুর আক্রান্তের হার অনুযায়ী অবস্থাও ঠিক করি।
+    region_update_states(gs);
 }
 
-// আক্রান্তের পরিমাণ দেখে এলাকার অবস্থা ঠিক হয়; এটি মৃত্যুর হার নয়।
+
+// Set each region state from its infected fraction: clean up to 0.000001, infected below 0.30, critical
+// below 0.60, otherwise devastated. UI card colors use separate thresholds; returns nothing.
+// gs: shared game state; const means this function only reads it.
 void region_update_states(GameState *gs) {
+    // i: Zero-based index used to visit each item in this loop.
     for (int i = 0; i < MAX_REGIONS; i++) {
+        // Currently infected fraction of original regional population (0..1).
         float infected = gs->regions[i].infected;
         if (infected <= .000001f) gs->regions[i].state = REGION_CLEAN;
         else if (infected < .30f) gs->regions[i].state = REGION_INFECTED;

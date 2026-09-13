@@ -1,130 +1,225 @@
+// Header guard: include these declarations only once per compiled source file.
 #ifndef TYPES_H
 #define TYPES_H
 
-#define LOSS_DEATH_SHARE 0.30f // মোট জনসংখ্যার ৩০% মারা গেলে হারবে; কমালে খেলা কঠিন।
+// Lose when deaths reach this fraction of original world population (0.30 = 30%).
+#define LOSS_DEATH_SHARE 0.30f
 
+// Number of simulated regions and region array length.
 #define MAX_REGIONS      8
+// Maximum simultaneous notification slots, not the random-event pool size.
 #define MAX_EVENTS       8
 
+// Game window width in pixels.
 #define SCREEN_WIDTH     1366
+// Game window height in pixels.
 #define SCREEN_HEIGHT    768
 
-#define DEFAULT_DAY_LENGTH  2.0f // ১ game day = ২ বাস্তব সেকেন্ড।
-#define GLOBAL_MIXING_RATE  0.02f // অন্য অঞ্চল থেকে রোগ আসার মাত্রা।
+// Real seconds per game day at normal speed (2 seconds).
+#define DEFAULT_DAY_LENGTH  2.0f
+// Base strength of imported infection pressure between regions.
+#define GLOBAL_MIXING_RATE  0.02f
 
+// Enum naming the active screen; only SCREEN_GAME advances simulation time.
 typedef enum {
+  // Main menu and help page.
   SCREEN_MENU = 0,
+  // Live simulation and gameplay.
   SCREEN_GAME,
+  // Frozen simulation with pause overlay.
   SCREEN_PAUSED,
+  // Victory results.
   SCREEN_WIN,
+  // Defeat results.
   SCREEN_LOSE
 } GameScreen;
 
+// Enum recording regional infection severity. These stored states are separate from UI card colors.
 typedef enum {
+    // Infected fraction at most 0.000001.
     REGION_CLEAN = 0,
+    // Above clean threshold and below 30% infected.
     REGION_INFECTED,
+    // At least 30% but below 60% infected.
     REGION_CRITICAL,
+    // At least 60% infected.
     REGION_DEVASTATED
 } RegionState;
 
+// Ordered enum for cure stages. Incrementing the phase advances to the next stage.
 typedef enum {
+    // First research phase; needs 100 research points.
     PHASE_DISCOVERY = 0,
+    // Second research phase; needs another 100 points.
     PHASE_TRIALS,
+    // Build vaccine stock to 10 units.
     PHASE_PRODUCTION,
+    // Produce and administer vaccines to susceptible people.
     PHASE_DISTRIBUTION
 } ResearchPhase;
 
+// Enum for regional climate, used by adapted mutations and the winter event.
 typedef enum {
+    // No hot/cold adaptation bonus.
     CLIMATE_TEMPERATE = 0,
+    // Cold adaptation can boost spread; winter event applies.
     CLIMATE_COLD,
+    // Hot adaptation can boost spread.
     CLIMATE_HOT
 } RegionClimate;
 
+// Bit-flag enum: each 1 << n uses a different bit, allowing several traits in one integer.
 typedef enum {
-  // 1 << n মানে n নম্বর bit; তাই একসঙ্গে একাধিক trait রাখা যায়।
+
+  // No mutation flag.
   TRAIT_NONE = 0,
+  // Adds spread strength when selected.
   TRAIT_AIRBORNE = (1 << 0),
+  // Adds extra drug resistance when selected.
   TRAIT_DRUG_RESISTANT = (1 << 1),
+  // Weakens the healthcare reduction of spread.
   TRAIT_STEALTH = (1 << 2),
+  // Adds base daily mortality when selected.
   TRAIT_LETHAL = (1 << 3),
+  // Multiplies cross-region mixing by 1.5.
   TRAIT_FAST_SPREAD = (1 << 4),
+  // Multiplies spread by 1.15 in cold regions.
   TRAIT_COLD_ADAPTED = (1 << 5),
+  // Multiplies spread by 1.15 in hot regions.
   TRAIT_HOT_ADAPTED = (1 << 6),
+  // Adds spread strength when selected; no separate incubation timer.
   TRAIT_LONG_INCUBATION = (1 << 7)
 } MutationTrait;
 
+// Struct holding virus rates, mutation history, and calculated global outbreak fractions.
 typedef struct {
-    float infectivity; // প্রতিদিন সংক্রমণ ছড়ানোর শক্তি।
-    float severity; // চিকিৎসার প্রভাব ধরার আগের দৈনিক মৃত্যুর হার।
-    float resistance; // research ও vaccine-এর কার্যকারিতা কমায়।
-    float mutationRate; // ২০–২৯ দিনের মধ্যে প্রতিদিন mutation-এর সম্ভাবনা।
-    float recoveryRate; // প্রতিদিন আক্রান্তদের কত অংশ সুস্থ হয়।
+    // Daily spreading coefficient; larger values increase new infections.
+    float infectivity;
+    // Base fraction of infected people dying per day, before healthcare effects.
+    float severity;
+    // Drug resistance (0..1); reduces research speed and vaccine effectiveness.
+    float resistance;
+    // Daily mutation probability on eligible days 20..29 after the last mutation.
+    float mutationRate;
+    // Fraction of starting infected people recovering per day.
+    float recoveryRate;
 
-    int activeTraits; // একটি int-এর আলাদা bit-এ একাধিক বৈশিষ্ট্য রাখি।
-    int lastMutationDay; // সর্বশেষ mutation কোন দিনে হয়েছে।
-    MutationTrait lastMutation; // সর্বশেষ mutation-এর ধরন।
+    // Integer bit mask holding all acquired mutation flags.
+    int activeTraits;
+    // Game day of the most recent mutation; starts at zero.
+    int lastMutationDay;
+    // Most recently selected mutation flag.
+    MutationTrait lastMutation;
 
-    float globalInfected; // বর্তমানে আক্রান্ত / শুরুর মোট জনসংখ্যা।
-    float globalDead; // এ পর্যন্ত মৃত / শুরুর মোট জনসংখ্যা।
+    // Currently infected divided by original world population (0..1).
+    float globalInfected;
+    // Cumulative deaths divided by original world population (0..1).
+    float globalDead;
 } Virus;
 
+// Struct holding shared research, funding, staff, vaccine stock, and survivor protection.
 typedef struct {
-  int completionDay; // Distribution শুরু হওয়ার দিন; শুরু না হলে ০।
-  ResearchPhase phase; // Discovery, Trials, Production অথবা Distribution।
-  float researchProgress; // বর্তমান research ধাপ কত শতাংশ শেষ: ০–১০০।
-  float stability; // স্থিতিশীলতা: ০–১; mutation হলে কমে।
-  float effectiveness; // দেওয়া vaccine-এর কত অংশ মানুষকে সুরক্ষা দেয়: ০–১।
-  float productionRate; // প্রতিদিন উৎপাদনের ক্ষমতা, vaccine unit-এ।
-  float globalDistributed; // সুরক্ষিত মানুষ / জীবিত মানুষ; শুরুর জনসংখ্যা দিয়ে ভাগ নয়।
+  // Day Distribution opened; zero means it has not opened yet.
+  int completionDay;
+  // Current cure stage; enum order follows the research-to-distribution journey.
+  ResearchPhase phase;
+  // Points completed in the current research phase (0..100).
+  float researchProgress;
+  // Cure stability (0..1); mutations lower it and it scales research/effectiveness.
+  float stability;
+  // Fraction of administered doses that successfully protect people (0..1).
+  float effectiveness;
+  // Current vaccine capacity in units per game day; used after Trials.
+  float productionRate;
+  // Protected people divided by living world population (0..1).
+  float globalDistributed;
 
-  float funding; // বিশ্বব্যাপী খরচের টাকা; আলাদা অঞ্চলের wallet নয়।
-  float fundingPerTick; // প্রতি game day-তে আয়।
-  float rpPerTick; // upgrade multiplier-এর আগের মূল research/day।
+  // Shared spendable money for all global and regional purchases.
+  float funding;
+  // Income per game day, despite the historical Tick name.
+  float fundingPerTick;
+  // Base research points per game day before bonuses and multipliers.
+  float rpPerTick;
 
-  int   scientistCount; // কেনা scientist-এর সংখ্যা।
-  int   labLevel; // Lab upgrade level: ০–৩।
-  int   productionLevel; // উৎপাদন upgrade level: ০–৩।
-  float vaccineStockpile; // মজুত vaccine; ১ unit = শুরুর জনসংখ্যার ১%-এর জন্য dose।
+  // Number of purchased scientists; improves research and production.
+  int   scientistCount;
+  // Purchased lab level (0..3), improving research speed.
+  int   labLevel;
+  // Purchased factory level (0..3), improving vaccine output.
+  int   productionLevel;
+  // Available vaccine units; one unit supplies doses for 1% of original world population.
+  float vaccineStockpile;
 } CureState;
 
+// Struct for one region. Population is in millions; infected/dead/vaccinated use its original population.
 typedef struct {
-  const char *name; // অঞ্চলের নাম।
-  float population; // অঞ্চলের শুরুর জনসংখ্যা, million এককে।
-  float infected; // বর্তমানে আক্রান্ত মানুষের অংশ: ০–১।
-  float dead; // এ পর্যন্ত মৃত মানুষের অংশ; এই মান কমে না।
-  int   overloadedDays; // একটানা কয় দিন হাসপাতাল overloaded।
-  float vaccinated; // vaccine-এ সুরক্ষিত মানুষের অংশ: ০–১।
-  float healthcareCapacity; // হাসপাতালের মূল ক্ষমতার মান: ০–১।
-  float borderControl; // সীমান্ত নিয়ন্ত্রণের শক্তি: ০–১।
-  RegionState state; // অঞ্চলের সংক্রমণের অবস্থা।
-  RegionClimate climate; // স্বাভাবিক, ঠান্ডা অথবা গরম আবহাওয়া।
-  float cureResearch; // স্থানীয় research point: ০–১০০।
-  int bordersClosed; // ১ হলে player সীমান্ত বন্ধ করেছে।
+  // Read-only region name displayed in cards and details.
+  const char *name;
+  // Original region population in millions, used as the weight in world totals.
+  float population;
+  // Currently infected fraction of original regional population (0..1).
+  float infected;
+  // Cumulative dead fraction of original regional population; never decreases.
+  float dead;
+  // Consecutive days with hospital demand above capacity; resets when load recovers.
+  int   overloadedDays;
+  // Successfully protected fraction of original regional population (0..1).
+  float vaccinated;
+  // Base hospital/prevention score (0..1), improved by local research.
+  float healthcareCapacity;
+  // Baseline border strength (0..1); higher values reduce spread.
+  float borderControl;
+  // Stored infection category for this region, separate from UI card colors.
+  RegionState state;
+  // Region climate used by climate-adapted traits and winter outbreaks.
+  RegionClimate climate;
+  // Local research points (0..100); boost global research and this region healthcare.
+  float cureResearch;
+  // Whether player-ordered closure is active (1/true closed, 0/false open).
+  int bordersClosed;
 } Region;
 
+// Struct for one notification: text pointers, visible flag, and remaining display time.
 typedef struct {
-  const char *title; // খবরের শিরোনাম।
-  const char *description; // খবরের বিবরণ।
-  int active; // ১ হলে খবর দেখা যাবে।
-  float timer; // খবর দেখানোর বাকি বাস্তব সেকেন্ড।
+  // Read-only notification heading; the event stores the pointer rather than copying text.
+  const char *title;
+  // Read-only notification detail; must remain valid while the event is displayed.
+  const char *description;
+  // 1 means the notification is active; 0 means this slot is free.
+  int active;
+  // Remaining real seconds before the notification expires; frozen while paused.
+  float timer;
 } Event;
 
+// Struct containing the shared game data passed between simulation, cure, events, and UI.
 typedef struct {
-    GameScreen screen; // বর্তমানে কোন screen চলছে।
-    Virus     virus; // Virus-এর সব তথ্য একসঙ্গে।
-    CureState cure; // Research ও vaccine-এর সব তথ্য।
+    // Current menu/gameplay/pause/result screen.
+    GameScreen screen;
+    // All virus state and calculated global infection/death totals.
+    Virus     virus;
+    // All research, funding, staffing, and vaccination state.
+    CureState cure;
 
-    Region    regions[MAX_REGIONS]; // আটটি অঞ্চলের array।
-    Event     eventLog[MAX_EVENTS]; // পর্দায় দেখানোর খবরের array।
-    int       eventCount; // সক্রিয় খবরের সংখ্যা।
-    int       lastEventIndex; // একই event পরপর আসা কমাতে আগের event মনে রাখি।
-
-    const char *endReason; // জয় বা হারের কারণ।
-    int   day; // কত game day পার হয়েছে।
-    float dayTimer; // পরের দিন হওয়ার জন্য জমা হওয়া সময়।
-    float dayLength; // এক game day-এর জন্য যত বাস্তব সেকেন্ড লাগে।
-    int   gameSpeed; // ১ = স্বাভাবিক, ২ = দ্বিগুণ; pause নির্ধারিত হয় screen দিয়ে।
-    int selectedRegionIndex; // Player কোন অঞ্চলে click করেছে তার index: ০–৭।
+    // Array of the eight simulation regions; indices identify the same regions throughout the game.
+    Region    regions[MAX_REGIONS];
+    // Array of eight notification slots, not the pool of all possible random events.
+    Event     eventLog[MAX_EVENTS];
+    // Number of currently active notification slots.
+    int       eventCount;
+    // Last random-event pool index; -1 initially. Used to reduce immediate repeats.
+    int       lastEventIndex;
+    // Read-only win/lose explanation; NULL until a result is decided.
+    const char *endReason;
+    // Number of completed game days.
+    int   day;
+    // Accumulated frame seconds multiplied by game speed; whole days are removed from it.
+    float dayTimer;
+    // Seconds required for one game day at normal speed.
+    float dayLength;
+    // Simulation speed multiplier: 1 or 2. The screen state controls pausing.
+    int   gameSpeed;
+    // Index (0..7) of the region selected for the details panel.
+    int selectedRegionIndex;
 } GameState;
 
 #endif

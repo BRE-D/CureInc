@@ -1,12 +1,21 @@
 #include "virus.h"
 #include <stdlib.h>
 
+// Minimum gap in game days between mutations.
 #define MUTATION_MIN_DAYS 20
+// Gap at which a mutation is guaranteed instead of rolling a chance.
 #define MUTATION_MAX_DAYS 30
+// Maximum bed share of original regional population, scaled by healthcare score.
 #define HOSPITAL_BED_SHARE 0.05f
+// Fraction of infected people assumed to require a hospital bed.
 #define HOSPITAL_CASE_SHARE 0.10f
 
-// সংখ্যাকে সর্বনিম্ন ও সর্বোচ্চ সীমার মধ্যে রাখি।
+
+// Return value limited to the inclusive range low..high. Used to keep fractions and calculated counts
+// inside valid bounds.
+// value: number to limit.
+// low: smallest allowed value.
+// high: largest allowed value.
 static float clamp(float value, float low, float high)
 {
     if (value < low) return low;
@@ -14,32 +23,45 @@ static float clamp(float value, float low, float high)
     return value;
 }
 
-// স্থানীয় research বাড়লে হাসপাতালের কার্যকর ক্ষমতা বাড়ে।
+
+// Return the region hospital score (0..1), including 0.002 extra capacity per local research point. Used
+// by hospital load, spread prevention, and mortality calculations.
+// r: region whose data is being examined.
 static float effective_healthcare(const Region *r)
 {
     return clamp(r->healthcareCapacity + r->cureResearch * 0.002f,
                  0.0f, 1.0f);
 }
 
-// নতুন খেলার virus-এর প্রাথমিক মান বসাই।
+
+// Clear the virus state and set starting spread, death, recovery, and mutation rates. Called by
+// reset_game; returns nothing.
+// v: virus data; const means read-only access.
 void virus_init(Virus *v)
 {
     *v = (Virus){0};
 
-    v->infectivity = 0.13f; // বাড়ালে রোগ দ্রুত ছড়াবে।
-    v->severity = 0.005f; // বাড়ালে আক্রান্তদের মৃত্যু বেশি হবে।
-    v->recoveryRate = 0.030f; // দিনে আক্রান্তদের ৩% সুস্থ হওয়ার মূল হার।
+    v->infectivity = 0.13f;
+    v->severity = 0.005f;
+    v->recoveryRate = 0.030f;
     v->mutationRate = 0.12f;
     v->lastMutation = TRAIT_NONE;
 }
 
-// & দিয়ে দেখি নির্দিষ্ট বৈশিষ্ট্যের bit চালু আছে কি না।
+
+// Test a trait bit using bitwise AND. Return 1 if that bit is active, otherwise 0; does not change the
+// virus.
+// v: virus data; const means read-only access.
+// t: mutation flag to test or name.
 int virus_has_trait(const Virus *v, MutationTrait t)
 {
     return (v->activeTraits & t) != 0;
 }
 
-// বৈশিষ্ট্যের code থেকে পর্দায় দেখানোর নাম পাই।
+
+// Return a display name for one mutation flag, or "None yet" for an unknown/no flag. The returned string
+// is read-only.
+// t: mutation flag to test or name.
 const char *virus_trait_name(MutationTrait t)
 {
     switch (t) {
@@ -55,27 +77,36 @@ const char *virus_trait_name(MutationTrait t)
     }
 }
 
-// আগের mutation-এর ২০–৩০ দিন পরে virus বদলায়।
+
+// Attempt a mutation 20..30 days after the last one; day 30 guarantees it. Keep old trait bits, apply the
+// chosen effects, and cap rates. Repeated traits are allowed. Return 1 if mutated, otherwise 0.
+// v: virus data; const means read-only access.
+// day: current game-day number.
 int virus_try_mutate(Virus *v, int day)
 {
+    // Game days since the previous mutation.
     int elapsed = day - v->lastMutationDay;
 
     if (elapsed < MUTATION_MIN_DAYS) return 0;
 
-    if (elapsed < MUTATION_MAX_DAYS) { // ৩০ দিন হলে আর random roll নয়, mutation নিশ্চিত।
+    if (elapsed < MUTATION_MAX_DAYS) {
+        // Random number in [0,1), compared with the daily mutation probability.
         double roll = (double)rand() / ((double)RAND_MAX + 1.0);
 
         if (roll >= v->mutationRate) return 0;
     }
 
+    // One randomly selected mutation bit; it may already be present.
     MutationTrait chosen = (MutationTrait)(1 << (rand() % 8));
 
-    v->activeTraits |= chosen; // পুরোনো trait না মুছে নতুন bit চালু করি।
+    // Bitwise OR adds the chosen flag without clearing previously acquired traits.
+    v->activeTraits |= chosen;
     v->lastMutation = chosen;
     v->lastMutationDay = day;
 
-    v->infectivity *= 1.03f; // আগের infectivity-এর তুলনায় ৩% বৃদ্ধি।
-    v->resistance += 0.05f; // resistance-এ ৫ percentage point যোগ।
+    // Increase relative spread strength by 3%; resistance below rises by 5 percentage points.
+    v->infectivity *= 1.03f;
+    v->resistance += 0.05f;
 
     switch (chosen) {
         case TRAIT_AIRBORNE:
@@ -105,10 +136,15 @@ int virus_try_mutate(Virus *v, int day)
     return 1;
 }
 
-// রোগীর চাহিদা / শয্যা; ১-এর বেশি হলে হাসপাতাল overloaded।
+
+// Return patient demand divided by available beds. A result above 1 means overload; a small minimum bed
+// value prevents division by zero.
+// r: region whose data is being examined.
 float virus_hospital_load(const Region *r)
 {
+    // Available bed fraction of original regional population, with a nonzero minimum.
     float beds = effective_healthcare(r) * HOSPITAL_BED_SHARE;
+    // Fraction of original regional population requiring hospital beds.
     float demand = r->infected * HOSPITAL_CASE_SHARE;
 
     if (beds < 0.0001f) beds = 0.0001f;
@@ -116,15 +152,25 @@ float virus_hospital_load(const Region *r)
     return demand / beds;
 }
 
-// সব অঞ্চলের মানুষ গুনে বিশ্বব্যাপী হার বের করি; শতাংশের সরল গড় নয়।
+
+// Recalculate population-weighted global totals after region changes. Infection and death use original
+// population; vaccination uses living population. Called at initialization and after each daily update;
+// returns nothing.
+// gs: shared game state; const means this function only reads it.
 void virus_refresh_totals(GameState *gs)
 {
+    // Total original world population in millions.
     float population = 0.0f;
+    // Population-weighted number currently infected, in millions.
     float infected = 0.0f;
+    // Population-weighted cumulative deaths, in millions.
     float dead = 0.0f;
+    // Population-weighted number successfully protected, in millions.
     float vaccinated = 0.0f;
 
+    // i: Zero-based index used to visit each item in this loop.
     for (int i = 0; i < MAX_REGIONS; i++) {
+        // Pointer to the region currently being processed.
         const Region *r = &gs->regions[i];
 
         population += r->population;
@@ -138,6 +184,7 @@ void virus_refresh_totals(GameState *gs)
     gs->virus.globalInfected = infected / population;
     gs->virus.globalDead = dead / population;
 
+    // Surviving world population in millions; denominator for vaccine coverage.
     float living = population - dead;
 
     gs->cure.globalDistributed = living > 0.0f
@@ -145,30 +192,42 @@ void virus_refresh_totals(GameState *gs)
         : 0.0f;
 }
 
-// দিনে একবার নতুন সংক্রমণ, মৃত্যু ও সুস্থ হওয়া হিসাব করি।
+
+// Advance infections, deaths, recoveries, and hospital overload by one day. Read a snapshot of starting
+// infections so region order does not change spread. Recoveries become susceptible again; returns nothing.
+// gs: shared game state; const means this function only reads it.
 void virus_update(GameState *gs)
 {
+    // Pointer to the shared virus state.
     Virus *v = &gs->virus;
+    // Array storing each region infected fraction before any region is updated this day.
     float previous[MAX_REGIONS];
 
-    // একই দিনের শুরুর আক্রান্তের তথ্য রাখি; region-এর ক্রমে ফল বদলাবে না।
+
+    // i: Zero-based index used to visit each item in this loop.
     for (int i = 0; i < MAX_REGIONS; i++)
         previous[i] = gs->regions[i].infected;
 
+    // i: Zero-based index used to visit each item in this loop.
     for (int i = 0; i < MAX_REGIONS; i++) {
+        // Pointer to the region currently being processed.
         Region *r = &gs->regions[i];
 
-        // সুস্থ = মোট ১ - আক্রান্ত - মৃত - vaccine-এ সুরক্ষিত।
+
+        // Susceptible fraction: original population minus infected, dead, and protected fractions.
         float healthy = clamp(
             1.0f - previous[i] - r->dead - r->vaccinated,
             0.0f, 1.0f
         );
 
+        // Effective regional healthcare score after local research, limited to 0..1.
         float healthcare = effective_healthcare(r);
 
+        // Effective border strength; forced to 1 for a player-closed border.
         float border = r->bordersClosed ? 1.0f : r->borderControl;
         border = clamp(border, 0.0f, 1.0f);
 
+        // Spread multiplier: 1 normally, 1.15 when an active adaptation matches the region climate.
         float climate = 1.0f;
 
         if (r->climate == CLIMATE_COLD &&
@@ -179,65 +238,82 @@ void virus_update(GameState *gs)
             virus_has_trait(v, TRAIT_HOT_ADAPTED))
             climate = 1.15f;
 
+        // Infected people in other open-border regions, in millions, using the daily snapshot.
         float sourceCases = 0.0f;
+        // Original population of all other regions in millions, including closed-border regions.
         float sourcePopulation = 0.0f;
 
+        // j: Index of another region, used to calculate imported infection pressure.
         for (int j = 0; j < MAX_REGIONS; j++) {
             if (j == i) continue;
 
+            // Read-only pointer to another region contributing to imported infection pressure.
             const Region *source = &gs->regions[j];
 
+            // All other regions count in the denominator; only open sources add infected people below.
             sourcePopulation += source->population;
 
             if (!source->bordersClosed)
                 sourceCases += previous[j] * source->population;
         }
 
-        // অন্য অঞ্চলের জনসংখ্যা অনুযায়ী বাইরের আক্রান্তের গড় বের করি।
+
+        // Population-weighted infection pressure from other regions; closed sources add no cases.
         float imported = sourcePopulation > 0.0f
             ? sourceCases / sourcePopulation
             : 0.0f;
 
+        // Cross-region transmission factor; Fast Spread increases it.
         float mixing = GLOBAL_MIXING_RATE;
 
         if (virus_has_trait(v, TRAIT_FAST_SPREAD))
             mixing *= 1.5f;
 
+        // Spread multiplier remaining after healthcare prevention; a smaller value is safer.
         float prevention = 1.0f - healthcare * 0.30f;
 
         if (virus_has_trait(v, TRAIT_STEALTH))
             prevention = 1.0f - healthcare * 0.15f;
 
-        // স্থানীয় সংক্রমণ এবং বাইরের সংক্রমণ যোগ করে প্রতিরোধের প্রভাব ধরি।
+
+        // Combined local and imported infection pressure after climate, healthcare, and border effects.
         float exposure = v->infectivity * climate * prevention *
             (previous[i] * (1.0f - border * 0.5f)
              + mixing * imported * (1.0f - border));
 
-        // সুস্থ মানুষের চেয়ে বেশি নতুন আক্রান্ত হওয়া সম্ভব নয়।
+
+        // Newly infected fraction of original region population, capped to susceptible people.
         float newCases = clamp(exposure * healthy, 0.0f, healthy);
 
+        // Daily fraction of infected people dying after healthcare and overload adjustments.
         float deathRate = v->severity * (1.0f - healthcare * 0.5f);
 
         if (virus_hospital_load(r) > 1.0f)
-            deathRate *= 2.0f; // হাসপাতাল ভরে গেলে মৃত্যুর হার দ্বিগুণ।
+            // Overload doubles the adjusted daily death rate.
+            deathRate *= 2.0f;
 
+        // This day deaths as a fraction of original region population.
         float deaths = clamp(
             previous[i] * deathRate,
             0.0f, previous[i]
         );
 
-        // একই মানুষকে একই দিনে মৃত ও সুস্থ দুই জায়গায় গোনা যাবে না।
+
+        // This day recoveries, capped so no person is counted as both dead and recovered.
         float recoveries = clamp(
             previous[i] * v->recoveryRate,
             0.0f, previous[i] - deaths
         );
 
+        // New cases enter infection; deaths and recoveries leave it. Recovered people rejoin the
+        // susceptible remainder.
         r->infected = previous[i] + newCases - deaths - recoveries;
-        r->dead += deaths; // মৃত্যু জমে; recovered মানুষ আবার সুস্থ অংশে ফেরে।
+        r->dead += deaths;
 
         if (virus_hospital_load(r) > 1.0f)
             r->overloadedDays++;
         else
-            r->overloadedDays = 0; // স্বাভাবিক হলে একটানা overload-এর হিসাব নতুন করে শুরু।
+            // Recovery of hospital capacity breaks the consecutive overload streak.
+            r->overloadedDays = 0;
     }
 }

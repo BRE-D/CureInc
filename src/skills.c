@@ -1,2 +1,2 @@
+// Reserved module: no skill mechanics or functions are implemented in this version.
 #include "skills.h"
-// এই demo-তে skill tree নেই; পুরোনো build তালিকা ঠিক রাখতে file-টি রাখা হয়েছে।
