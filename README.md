@@ -1,245 +1,241 @@
-# 🦠 CureInc - Pandemic Management Strategy Game
+# CureInc - Pandemic Management Strategy Game
 
-**A challenging real-time strategy game where you must save humanity from a deadly global pandemic!**
-
-Built in C using the raylib graphics library for native Windows performance.
+CureInc is a real-time pandemic management strategy game built in **C with raylib**. The player leads a global response team, develops a cure, manages research and vaccine production, supports individual regions, and tries to control the outbreak before too many people die.
 
 ---
 
-## 🎯 Game Objective
+## Game Objective
 
-**WIN:** Vaccinate 95% of the surviving population AND reduce infections below 2%
+### Win
+You win when all of the following are true:
+- The cure has reached the **Distribution** phase.
+- At least **90% of the living population is protected/vaccinated**.
+- Fewer than **5% of the living population is infected**.
 
-**LOSE IF:**
-- Global deaths exceed 30% of population
-- 6 or more regions have collapsed healthcare (20+ days overloaded)
-
----
-
-## 🎮 How to Play
-
-### Quick Start
-1. Run `CureInc.exe`
-2. Click "PLAY" to start
-3. Manage research, scientists, and regional responses
-4. Race against time to develop and distribute a cure!
-
-### Core Gameplay
-
-#### 💰 Resources
-- **Funding:** $40 starting budget, +$8/day income
-- Use funding to hire scientists, upgrade facilities, and support regions
-
-#### 🔬 Cure Development (4 Phases)
-1. **Discovery** - Identify and sequence the pathogen
-2. **Trials** - Clinical safety and efficacy testing
-3. **Production** - Manufacture vaccine doses
-4. **Distribution** - Global vaccination rollout
-
-#### 👨🔬 Research Systems
-- **Hire Scientists ($100 each)** - Each adds +10% research speed and +0.2 doses/day production
-- **Upgrade Labs (up to Level 3)** - Each level adds +15% research speed
-  - Level 1: $150 | Level 2: $300 | Level 3: $450
-- **Upgrade Production (up to Level 3)** - Each level adds +0.5 doses/day
-  - Level 1: $200 | Level 2: $400 | Level 3: $600
-
-#### 🌍 Regional Management (8 Regions)
-Click on regions to access management options:
-
-- **Fund Local Research ($100)** - Adds +15 research points, boosts healthcare
-- **Close Borders ($100)** - Reduces virus spread by 50%, blocks imports completely
-- **Monitor** - Track infection rates, deaths, and healthcare capacity
-
-**Regions:**
-- **Westeros** (Europe) - Starting outbreak
-- **Essos** (Asia) - Secondary outbreak, largest population
-- **Dorne** (Middle East/Spain)
-- **The North** (Scotland/Scandinavia)
-- **The Vale** (Alpine regions)
-- **Iron Islands** (Australia/Oceania)
-- **Beyond the Wall** (Antarctica)
-- **Dothraki Sea** (Eurasian Steppe)
-
-#### 🦠 Virus Mechanics
-- **Mutations** occur every 15-22 days:
-  - Airborne, Drug-Resistant, Stealth, Lethal
-  - Cold-Adapted, Hot-Adapted, Fast-Spread, Long Incubation
-- Each mutation increases infectivity (+5%) and resistance (+7%)
-- Mutations reduce cure stability (-5% each, minimum 50%)
-- Higher resistance slows research progress
-
-#### 📰 Random Events
-Events trigger every 5 days, affecting:
-- Funding rates (Budget Cuts, Funding Surge)
-- Research progress (Lab Breakthrough, Medical Miracle)
-- Public trust and border controls
-- Vaccine stockpiles (Supply Chain Collapse)
+### Lose
+You lose if either condition occurs:
+- Global deaths reach **30% of the original population**.
+- **All 8 regions** remain healthcare-overloaded for **30 consecutive game days**.
 
 ---
 
-## 🎨 UI Guide
+## How to Play
 
-### Main Screen Tabs
-- **Lab** - Hire scientists and upgrade facilities
-- **Virus** - Monitor pathogen stats and mutations
-- **Cure** - Track research phases and distribution
+1. Run `CureInc.exe`.
+2. Click **PLAY**.
+3. Hire scientists and upgrade the laboratory to complete cure research faster.
+4. Monitor the eight regions and support regions that are struggling.
+5. After Trials, vaccines enter Production. When the vaccine stockpile is ready, Distribution starts automatically.
+6. Upgrade vaccine production to protect people faster.
+7. Reach the win conditions before the death or healthcare-collapse conditions are reached.
 
-### Controls
-- **TAB** - Cycle through regions
-- **Click regions** - Open management panel
-- **1x / 2x buttons** - Adjust game speed
-- **|| button** - Pause game
-
-### Color Indicators
-- 🟢 **Green** - Clean/Safe regions
-- 🟡 **Yellow** - Infected regions
-- 🟠 **Orange** - Critical regions (30-60% infected)
-- 🔴 **Red** - Devastated regions (60%+ infected)
+The **How to Play** screen inside the game also explains the main gameplay loop.
 
 ---
 
-## 💡 Strategy Tips
+## Core Gameplay
 
-### Early Game (Days 1-30)
-1. **Close borders immediately** on clean regions to contain the outbreak
-2. **Invest in regional research** in infected regions (Westeros, Essos)
-3. **Hire your first scientist** around Day 10-12
-4. **Upgrade Lab Level 1** to multiply research bonuses
+### Resources
+- Starting funding: **$50**
+- Base income: **+$10 per game day**
+- Funding is used for scientists, laboratory upgrades, vaccine-production upgrades, local research, and border control.
 
-### Mid Game (Days 30-80)
-1. **Keep hiring scientists** - they boost both research AND production
-2. **Upgrade labs to Level 2-3** for maximum research multiplier
-3. **Monitor hospital capacity** - overloaded hospitals double death rates
-4. **React to mutations** - each one hurts cure effectiveness
+### Cure Development
+The cure progresses through four phases:
 
-### Late Game (Days 80-150)
-1. **Upgrade production facilities** as soon as you reach Production phase
-2. **Stockpile vaccines** - need 10 doses to start distribution
-3. **Prioritize high-population regions** for vaccination
-4. **Watch the win conditions** - need 95% vaccinated AND <2% infected
+1. **Discovery**
+2. **Trials**
+3. **Production**
+4. **Distribution**
 
-### Advanced Strategy
-- **Border closures** are extremely cost-effective at $100
-- **Regional research** provides better ROI than scientists early game
-- **Scientist + Lab combos** multiply bonuses (1.1 × 1.15 = 1.265×)
-- **Hospital overload** doubles death rate - prevent at all costs
-- **Virus resistance** slows research by up to 60% - race against mutations!
+Research is performed during Discovery and Trials. Production builds the vaccine stockpile, and Distribution protects the living population.
+
+### Research and Production
+- **Hire Scientist: $100**
+  - Each scientist increases research speed by **20%**.
+  - Each scientist also adds **0.2 vaccine units/day** to production.
+- **Upgrade Lab: Level 1-3**
+  - Costs: **$150 / $300 / $450**
+  - Each lab level increases research speed by **25%**.
+- **Upgrade Production: Level 1-3**
+  - Costs: **$200 / $400 / $600**
+  - Each level adds **0.5 vaccine units/day**.
+
+Laboratory upgrades are useful during Discovery and Trials. Production upgrades remain useful once vaccine production begins.
 
 ---
 
-## 🏗️ Building from Source
+## Regional Management
+
+The game contains eight regions:
+
+- The North
+- Dorne
+- Westeros
+- The Vale
+- Essos
+- The Iron Islands
+- Beyond the Wall
+- The Dothraki Sea
+
+Click a region to inspect its outbreak and healthcare status.
+
+### Regional Actions
+- **Fund Local Research ($100)**
+  - Adds up to **15 local research points**.
+  - Local research contributes to cure research while global research is active and also improves that region's effective healthcare capacity.
+- **Close Borders ($100)**
+  - Stops imported infection from other regions and reduces local spread.
+- **Reopen Borders**
+  - Reopens a previously closed region at no additional cost.
+
+---
+
+## Virus System
+
+The virus tracks:
+- Infectivity
+- Severity
+- Recovery rate
+- Drug resistance
+- Mutation rate
+- Active mutation traits
+
+Mutations can begin after roughly **20 game days**, with additional mutations occurring later depending on the mutation check. A base mutation increases infectivity by about **3%** and resistance by **5 percentage points**, while the selected mutation trait can add an additional effect.
+
+Possible mutation traits include:
+- Airborne
+- Drug Resistant
+- Stealth
+- Lethal
+- Fast Spread
+- Cold Adapted
+- Hot Adapted
+- Long Incubation
+
+Each successful mutation also reduces cure stability by **3 percentage points**, down to a minimum stability of **60%**.
+
+---
+
+## Random Events
+
+A random world event is triggered every **7 game days**. Events can affect existing game variables such as:
+- Funding and daily income
+- Research progress and base research rate
+- Border control
+- Vaccine stockpile
+
+Examples include Funding Surge, Public Panic, Lab Breakthrough, Budget Cuts, Volunteer Surge, Supply Disruption, Supply Chain Collapse, Political Infighting, and Medical Miracle.
+
+Some events are informational and are used to communicate changes in the world state.
+
+---
+
+## Controls and UI
+
+### Main Tabs
+- **Lab** - Hire scientists and purchase upgrades.
+- **Virus** - View virus statistics, global infection, deaths, resistance, and mutation information.
+- **Cure** - View cure phase, research/production/distribution progress, stability, and effectiveness.
+
+### Gameplay Controls
+- **Click a region** - Select and inspect that region.
+- **TAB** - Cycle through regions.
+- **1x** - Normal speed.
+- **2x** - Double speed.
+- **Pause** - Pause the simulation while keeping information visible.
+
+The top HUD shows important global information and the next recommended action.
+
+---
+
+## Strategy Tips
+
+### Early Game
+- Hire scientists when you can afford them.
+- Upgrade the lab to accelerate Discovery and Trials.
+- Use local research to support vulnerable regions and contribute additional research.
+- Close borders selectively when imported infection becomes a serious threat.
+
+### Production and Distribution
+- Upgrade Production to create vaccines faster.
+- Production automatically builds the initial vaccine stockpile.
+- Distribution starts automatically once the required stockpile is reached.
+- Continue monitoring deaths, infections, and hospital load while vaccination expands.
+
+### Remember
+To win, protect **90% of living people** and reduce infection among survivors to **below 5%** before global deaths reach **30%** or every region suffers prolonged healthcare collapse.
+
+---
+
+## Building from Source
 
 ### Requirements
-- GCC compiler (MinGW via w64devkit)
-- raylib library installed at `C:\raylib\`
+- GCC / MinGW-compatible C compiler
+- raylib installed in the location expected by the build configuration
 
-### Build Commands
-```bash
+The included Windows build script expects raylib under:
+
+```text
+C:\raylib\
+```
+
+### Build
+Run:
+
+```text
 build.bat
 ```
-or
-```bash
-make
-```
 
-### Running
-```bash
+or use the included `Makefile` if your local development environment is configured for it.
+
+### Run
+After a successful build:
+
+```text
 CureInc.exe
 ```
 
 ---
 
-## 📊 Technical Details
+## Technical Details
 
-- **Resolution:** 1366×768 pixels
-- **Language:** C (C11 standard)
-- **Graphics:** raylib (OpenGL-based)
-- **Target:** Windows native
-- **FPS:** Locked at 60
-- **Day Length:** 2 real seconds per game day (configurable)
+- Language: **C (C11)**
+- Graphics library: **raylib**
+- Target platform: **Windows**
+- Resolution: **1366 x 768**
+- Target frame rate: **60 FPS**
+- Default game-day length: **2 real seconds**
+- Regions: **8**
+- Cure phases: **4**
 
 ### Project Structure
-```
+
+```text
 src/
-├── main.c      - Game loop and core logic (simplified with Bangla comments)
-├── virus.c/h   - Virus simulation and mutation system
-├── cure.c/h    - Vaccine research pipeline
-├── region.c/h  - Regional management (8 world regions)
-├── events.c/h  - Random event system
-├── skills.c/h  - Skill tree/upgrade system
-├── ui.c/h      - Enhanced UI with gradients and animations
-└── types.h     - All data structures and constants
+├── main.c       - Main game loop, time progression, and win/lose checks
+├── virus.c/h    - Virus spread, deaths, recovery, healthcare load, and mutations
+├── cure.c/h     - Research, funding, vaccine production, and distribution
+├── region.c/h   - Region initialization and region states
+├── events.c/h   - Random event system
+├── ui.c/h       - Menus, HUD, map/region interface, tabs, and end screens
+└── types.h      - Shared game structures, enums, and constants
 ```
 
 ---
 
-## 🎓 For Judges
+## Developers
 
-### Game Difficulty (Improved)
-The game has been significantly **harder to lose** with these changes:
-- ✅ Win requires 95% vaccination (was 90%) and <2% infection (was 5%)
-- ✅ Lose at 30% deaths (was 40%)
-- ✅ Hospital collapse at 20 days (was 30 days)
-- ✅ 6 regions collapsing causes loss (was all 8)
-- ✅ Virus mutates faster (every 15-22 days instead of 20-30)
-- ✅ Virus starts more infectious (+23%) and deadly (+60%)
-- ✅ Research is 20% slower, funding is 20% lower
-- ✅ Events occur every 5 days (was every 7)
+- **Shafin Rahman Khan**
+- **Shamiha Nawar Tanaj**
+- **Tasmia Karim Tanisha**
 
-### Code Quality
-- **Simplified main.c** - Reduced from 148 to 130 lines with clear Bangla comments
-- **Clean architecture** - Separated concerns (virus, cure, regions, UI, events)
-- **Readable code** - Descriptive variable names and comprehensive comments
-- **Bangla documentation** - Key game mechanics explained in Bengali
-
-### UI Improvements
-- ✅ Enhanced visual design with gradients, shadows, and animations
-- ✅ 3D button effects with hover animations
-- ✅ Progress bars with gradient fills and shine effects
-- ✅ Better color coding for game states
-- ✅ Clearer phase indicators and status displays
-- ✅ Improved readability with text shadows
-
-### Game Mechanics
-- **Strategic depth** - Multiple viable strategies (containment vs research rush)
-- **Risk management** - Balance spending between research, borders, and regional support
-- **Time pressure** - Virus mutates faster, requiring quick decisions
-- **Regional diversity** - Each region has unique stats and challenges
-- **Random events** - Add unpredictability and force adaptation
-
----
-
-## 📝 Version History
-
-### v2.0 (September 2026)
-- Made game significantly harder to lose
-- Simplified codebase with Bangla comments
-- Enhanced UI with modern visual effects
-- Improved game balance and difficulty curve
-- Better judge-friendly documentation
-
-### v1.0 (Initial Release)
-- Core pandemic management gameplay
-- 4-phase cure development system
-- 8 world regions with unique stats
-- Virus mutation system
-- Random events
-
----
-
-## 🏆 Credits
-
-**Developer:** [Your Name]
-**Engine:** raylib (https://www.raylib.com)
-**Language:** C
+**Engine/Library:** raylib  
+**Language:** C  
 **Year:** 2026
 
 ---
 
-## 📄 License
+## Educational Use
 
-This project is created for educational purposes.
-
----
-
-**Good luck saving the world! 🌍💉**
+This project was created for educational purposes as a group game-development project.

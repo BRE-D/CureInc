@@ -300,7 +300,10 @@ void UI_DrawRegionPanel(Rectangle bounds, RegionData *region, const Region *sour
     }
     DrawText(region->cureResearch >= 100.0f ? "Local research is full." : "Adds up to 15 local research points.",
              (int)bounds.x + 15, (int)bounds.y + 341, 12, DARKGRAY);
-    DrawText("Faster research + stronger hospitals.",
+    const char *localResearchHelp = (cure->phase < PHASE_PRODUCTION)
+        ? "Faster research + stronger hospitals."
+        : "Strengthens local hospital capacity.";
+    DrawText(localResearchHelp,
              (int)bounds.x + 15, (int)bounds.y + 358, 12, DARKGRAY);
 
     const char *toggleLabel = region->bordersClosed ? "Reopen Borders" : "Close Borders ($100)";

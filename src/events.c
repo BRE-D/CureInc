@@ -5,20 +5,20 @@
 
 static Event eventPool[POOL_SIZE] =
 {
-    {"Outbreak Reported", "A cluster of new cases has emerged--", 0, 0},
+    {"Outbreak Reported", "Fresh clusters add a small number of infections across the regions.", 0, 0},
     {"Funding Surge",  "Emergency relief package approved -- research budget increased--", 0, 0},
-    {"Mutation Watch", "Labs are monitoring the pathogen for new changes.", 0, 0},
+    {"Mutation Watch", "Genome surveillance improves vaccine stability by 2%.", 0, 0},
     {"Public Panic",  "Panic reduces border control by 5 points in every region.", 0, 0},
     {"Border Lockdown", "Governments seal transit corridors to slow inter-region spread", 0, 0},
     {"Lab Breakthrough", "A promising compound has cleared preliminary safety screening--", 0, 0},
     {"Budget cuts", "Political deadlock freezes a quarter of the research allocation--", 0, 0},
     {"Volunteer Surge", "Volunteers add +0.05 base research points per day.", 0, 0},
     {"Supply Disruption", "Cold-chain failure delays vaccine shipments to eastern zones--", 0, 0},
-    {"WHO Alert", "Global health authority raises threat level to High--", 0, 0},
+    {"WHO Alert", "Global alert unlocks +$1 emergency funding per day.", 0, 0},
     {"Supply Chain Collapse", "Port closures destroy half of the vaccine stockpile", 0, 0},
     {"Political Infighting", "Member nations prioritize hoarding; global solidarity dissolves--", 0, 0},
     {"Medical Miracle", "Research gains 5 progress points and +0.10 base points/day.", 0, 0},
-    {"Winter is coming", "Hospitals are preparing for colder weather.", 0, 0}
+    {"Winter is coming", "Cold regions experience a small rise in infections.", 0, 0}
 };
 
 // খালি জায়গায় খবর রাখি; সব ভরা হলে সবচেয়ে আগে শেষ হবে এমন খবরটি সরাই।
@@ -72,6 +72,18 @@ void events_trigger_random(GameState *gs)
 
     switch (pick)
     {
+        case 0: // নতুন outbreak: প্রতিটি অঞ্চলে অল্প নতুন infection যোগ হয়।
+            for (int r = 0; r < MAX_REGIONS; r++) {
+                float healthy = 1.0f - gs->regions[r].infected
+                              - gs->regions[r].dead
+                              - gs->regions[r].vaccinated;
+                if (healthy < 0.0f) healthy = 0.0f;
+
+                float added = healthy < 0.005f ? healthy : 0.005f;
+                gs->regions[r].infected += added;
+            }
+            break;
+
         case 1: // Funding Surge: প্রতিদিনের আয় বাড়ে।
             gs->cure.fundingPerTick += 2.0f;
             break;
@@ -111,8 +123,27 @@ void events_trigger_random(GameState *gs)
             if (gs->cure.funding < 0.0f) gs->cure.funding = 0.0f;
             break;
 
-        case 2:
-        case 13:
+        case 2: // Mutation Watch: vaccine stability সামান্য বাড়ে।
+            gs->cure.stability += 0.02f;
+            if (gs->cure.stability > 1.0f) gs->cure.stability = 1.0f;
+            break;
+
+        case 9: // WHO Alert: emergency support-এ দৈনিক funding বাড়ে।
+            gs->cure.fundingPerTick += 1.0f;
+            break;
+
+        case 13: // Winter: ঠান্ডা অঞ্চলে অল্প নতুন infection যোগ হয়।
+            for (int r = 0; r < MAX_REGIONS; r++) {
+                if (gs->regions[r].climate != CLIMATE_COLD) continue;
+
+                float healthy = 1.0f - gs->regions[r].infected
+                              - gs->regions[r].dead
+                              - gs->regions[r].vaccinated;
+                if (healthy < 0.0f) healthy = 0.0f;
+
+                float added = healthy < 0.01f ? healthy : 0.01f;
+                gs->regions[r].infected += added;
+            }
             break;
 
         case 3: // Panic-এ সীমান্ত নিয়ন্ত্রণ কমে; এটি সময় শেষে নিজে থেকে ফেরে না।

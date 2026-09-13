@@ -62,6 +62,11 @@ void cure_update(GameState *gs, float dtDays)
     c->funding += c->fundingPerTick * dtDays;
     c->productionRate = cure_production_rate(c);
 
+    // UI-তে সব ধাপেই বর্তমান vaccine effectiveness দেখাই।
+    c->effectiveness = c->stability * (1.0f - gs->virus.resistance * 0.25f);
+    if (c->effectiveness < 0.0f) c->effectiveness = 0.0f;
+    if (c->effectiveness > 1.0f) c->effectiveness = 1.0f;
+
     if (c->phase == PHASE_DISCOVERY || c->phase == PHASE_TRIALS) {
         c->researchProgress += cure_research_rate(gs) * dtDays;
         if (c->researchProgress >= 100.0f) {
@@ -72,9 +77,6 @@ void cure_update(GameState *gs, float dtDays)
     }
 
     c->vaccineStockpile += c->productionRate * dtDays;
-    c->effectiveness = c->stability * (1.0f - gs->virus.resistance * 0.25f);
-    if (c->effectiveness < 0.0f) c->effectiveness = 0.0f;
-    if (c->effectiveness > 1.0f) c->effectiveness = 1.0f;
 
     if (c->phase == PHASE_PRODUCTION) {
         if (c->vaccineStockpile >= INITIAL_STOCK_GOAL) {

@@ -8,7 +8,6 @@
 RAYLIB_PATH = C:/raylib/raylib/src
 
 CC      = C:\raylib\w64devkit\bin\gcc.exe
-CFLAGS  = -std=c11 -Wall -Wno-missing-braces -I$(RAYLIB_PATH)
 CFLAGS  = -std=c11 -Wall -Wno-missing-braces -I$(RAYLIB_PATH) -Isrc
 LDFLAGS = -L$(RAYLIB_PATH) -lraylib -lopengl32 -lgdi32 -lwinmm -lm
 
