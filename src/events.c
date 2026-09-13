@@ -1,55 +1,27 @@
 #include "events.h"
 #include "raylib.h"
 
-//events that can happen
 #define POOL_SIZE 14
 
-static Event eventPool[POOL_SIZE] = 
+static Event eventPool[POOL_SIZE] =
 {
-    {
-        "Outbreak Reported", "A cluster of new cases has emerged--", 0, 0 
-    },
-    {
-        "Funding Surge",  "Emergency relief package approved -- research budget increased--", 0, 0 
-    },
-    {
-        "Mutation Watch", "Labs are monitoring the pathogen for new changes.", 0, 0 
-    },
-    {
-        "Public Panic",  "Social media fuels mass hysteria, clinic queues double overnight--", 0, 0   
-    },
-    {
-        "Border Lockdown", "Governments seal transit corridors to slow inter-region spread", 0, 0 
-    },
-    {
-        "Lab Breakthrough", "A promising compound has cleared preliminary safety screening--", 0, 0 
-    },
-    {
-        "Budget cuts", "Political deadlock freezes a quarter of the research allocation--", 0, 0 
-    },
-    {
-        "Volunteer Surge", "Volunteers add +0.05 base research points per day.", 0, 0 
-    },
-    {
-        "Supply Disruption", "Cold-chain failure delays vaccine shipments to eastern zones--", 0, 0 
-    },
-    {
-        "WHO Alert", "Global health authority raises threat level to High--", 0, 0 
-    },
-    {
-        "Supply Chain Collapse", "Port closures destroy half of the vaccine stockpile", 0, 0 
-    },
-    {
-        "Political Infighting", "Member nations prioritize hoarding; global solidarity dissolves--", 0, 0
-    },
-    {
-        "Medical Miracle", "Research gains 5 progress points and +0.10 base points/day.", 0, 0 
-    },
-    {
-        "Winter is coming", "Hospitals are preparing for colder weather.", 0, 0 
-    }
+    {"Outbreak Reported", "A cluster of new cases has emerged--", 0, 0},
+    {"Funding Surge",  "Emergency relief package approved -- research budget increased--", 0, 0},
+    {"Mutation Watch", "Labs are monitoring the pathogen for new changes.", 0, 0},
+    {"Public Panic",  "Social media fuels mass hysteria, clinic queues double overnight--", 0, 0},
+    {"Border Lockdown", "Governments seal transit corridors to slow inter-region spread", 0, 0},
+    {"Lab Breakthrough", "A promising compound has cleared preliminary safety screening--", 0, 0},
+    {"Budget cuts", "Political deadlock freezes a quarter of the research allocation--", 0, 0},
+    {"Volunteer Surge", "Volunteers add +0.05 base research points per day.", 0, 0},
+    {"Supply Disruption", "Cold-chain failure delays vaccine shipments to eastern zones--", 0, 0},
+    {"WHO Alert", "Global health authority raises threat level to High--", 0, 0},
+    {"Supply Chain Collapse", "Port closures destroy half of the vaccine stockpile", 0, 0},
+    {"Political Infighting", "Member nations prioritize hoarding; global solidarity dissolves--", 0, 0},
+    {"Medical Miracle", "Research gains 5 progress points and +0.10 base points/day.", 0, 0},
+    {"Winter is coming", "Hospitals are preparing for colder weather.", 0, 0}
 };
 
+// খালি জায়গায় খবর রাখি; সব ভরা হলে সবচেয়ে আগে শেষ হবে এমন খবরটি সরাই।
 void events_add(GameState *gs, const char *title, const char *description)
 {
     int slot = 0;
@@ -65,59 +37,58 @@ void events_add(GameState *gs, const char *title, const char *description)
     gs->eventLog[slot] = (Event){title, description, 1, 8.0f};
 }
 
+// নতুন খেলার জন্য পুরোনো খবর ও আগের event মুছে দিই।
 void events_init(GameState *gs)
 {
-    //clear log before the game
+
     for (int i = 0; i < MAX_EVENTS; i++)
     {
         gs->eventLog[i].active = 0;
         gs->eventLog[i].timer = 0;
     }
     gs->eventCount = 0;
-    gs->lastEventIndex = -1; /* No previous event */
+    gs->lastEventIndex = -1;
 }
 
+// একটি random event বেছে তার নির্দিষ্ট প্রভাব প্রয়োগ করি।
 void events_trigger_random(GameState *gs)
 {
     int pick;
     int attempts = 0;
-    
-    /* Try to pick a different event than the last one */
+
     do {
         pick = GetRandomValue(0, POOL_SIZE - 1);
         attempts++;
-    } while (pick == gs->lastEventIndex && attempts < 5);
-    
-    gs->lastEventIndex = pick; /* Remember this event */
-    
+    } while (pick == gs->lastEventIndex && attempts < 5); // একই খবর এড়াতে সর্বোচ্চ ৫ চেষ্টা।
+
+    gs->lastEventIndex = pick;
+
     events_add(gs, eventPool[pick].title, eventPool[pick].description);
 
-    /* Apply mechanical effects based on event type */
     switch (pick)
     {
-        case 1: /* "Funding Surge" */
+        case 1: // Funding Surge: প্রতিদিনের আয় বাড়ে।
             gs->cure.fundingPerTick += 2.0f;
             break;
 
-        case 5: /* "Lab Breakthrough" */
+        case 5: // Lab Breakthrough: চলতি research progress বাড়ে।
             gs->cure.researchProgress += 5.0f;
             break;
 
-        case 6: /* "Budget cuts" */
+        case 6: // Budget cuts: আয় কমে, কিন্তু নির্ধারিত সর্বনিম্নের নিচে নয়।
             gs->cure.fundingPerTick -= 1.5f;
-            if (gs->cure.fundingPerTick < 1.0f) gs->cure.fundingPerTick = 1.0f;
+            if (gs->cure.fundingPerTick < 0.5f) gs->cure.fundingPerTick = 0.5f;
             break;
 
-        /* Small permanent bonuses: useful help, not a replacement for investment. */
-        case 7: /* "Volunteer Surge" */
+        case 7: // Volunteer: মূল research/day অল্প বাড়ে।
             gs->cure.rpPerTick += 0.05f;
             break;
 
-        case 8: /* Supply Disruption */
+        case 8: // মজুত vaccine-এর ১০% নষ্ট হয়।
             gs->cure.vaccineStockpile *= 0.90f;
             break;
 
-        case 10: /* Supply Chain Collapse */
+        case 10: // অর্ধেক মজুত নষ্ট এবং আয় কমে।
             gs->cure.vaccineStockpile *= 0.50f;
 
             gs->cure.fundingPerTick -= 2.0f;
@@ -127,21 +98,21 @@ void events_trigger_random(GameState *gs)
 
             break;
 
-        case 11: /* "Political Infighting" */
+        case 11: // বর্তমান টাকা থেকে ৫০ কাটা হয়।
             gs->cure.funding -= 50.0f;
             if (gs->cure.funding < 0.0f) gs->cure.funding = 0.0f;
             break;
 
-        case 12: /* "Medical Miracle" */
+        case 12: // Medical Miracle: progress এবং মূল research/day বাড়ে।
             gs->cure.researchProgress += 5.0f;
             gs->cure.rpPerTick += 0.10f;
             break;
 
-        case 2:  /* Mutation Watch: informational only */
-        case 13: /* Winter preparations: informational only */
+        case 2:
+        case 13:
             break;
 
-        case 3: /* "Public Panic" */
+        case 3: // Trust-এর মান কমে; বর্তমানে সংক্রমণের formula-তে trust নেই।
             for (int r = 0; r < MAX_REGIONS; r++)
             {
                 gs->regions[r].publicTrust -= 0.05f;
@@ -149,7 +120,7 @@ void events_trigger_random(GameState *gs)
             }
             break;
 
-        case 4: /* "Border Lockdown" */
+        case 4: // সব অঞ্চলে সীমান্ত নিয়ন্ত্রণ কিছুটা বাড়ে।
             for (int r = 0; r < MAX_REGIONS; r++)
             {
                 gs->regions[r].borderControl += 0.10f;
@@ -158,23 +129,24 @@ void events_trigger_random(GameState *gs)
             break;
 
         default:
-            /* Events 0, 9 are informational only */
+
             break;
     }
 }
 
+// খবরের সময় কমাই; সময় শেষ হলে খবর লুকাই।
 void events_update(GameState *gs, float delta)
 {
     for (int i = 0; i < MAX_EVENTS; i++)
     {
-        if (gs->eventLog[i].active) // Only update remaining showtime of the active elements in the eventlog
+        if (gs->eventLog[i].active)
         {
-            gs->eventLog[i].timer -= delta; // Subtract a microscopic slice of time (e.g., 0.016s)
-            
-            if (gs->eventLog[i].timer <= 0)  // Has the countdown reached 0?
+            gs->eventLog[i].timer -= delta;
+
+            if (gs->eventLog[i].timer <= 0)
             {
-                gs->eventLog[i].active = 0; // Turn it OFF (stops drawing)
-                gs->eventCount--;           // Subtract from active event count
+                gs->eventLog[i].active = 0;
+                gs->eventCount--;
             }
         }
     }

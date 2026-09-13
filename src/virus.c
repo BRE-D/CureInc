@@ -1,13 +1,12 @@
 #include "virus.h"
 #include <stdlib.h>
 
-/* Game balance values */
 #define MUTATION_MIN_DAYS 20
 #define MUTATION_MAX_DAYS 30
 #define HOSPITAL_BED_SHARE 0.05f
 #define HOSPITAL_CASE_SHARE 0.10f
 
-/* Keep a number inside an allowed range. */
+// সংখ্যাকে সর্বনিম্ন ও সর্বোচ্চ সীমার মধ্যে রাখি।
 static float clamp(float value, float low, float high)
 {
     if (value < low) return low;
@@ -15,32 +14,32 @@ static float clamp(float value, float low, float high)
     return value;
 }
 
-/* Local research improves the region's existing healthcare score. */
+// স্থানীয় research বাড়লে হাসপাতালের কার্যকর ক্ষমতা বাড়ে।
 static float effective_healthcare(const Region *r)
 {
     return clamp(r->healthcareCapacity + r->cureResearch * 0.002f,
                  0.0f, 1.0f);
 }
 
-/* Set starting virus values - Balanced for challenging gameplay */
+// নতুন খেলার virus-এর প্রাথমিক মান বসাই।
 void virus_init(Virus *v)
 {
     *v = (Virus){0};
 
-    v->infectivity = 0.10f;   /* Reduced from 0.13 so spread is manageable */
-    v->severity = 0.004f;     /* Reduced from 0.005 so deaths are slower */
-    v->recoveryRate = 0.030f;
+    v->infectivity = 0.13f; // বাড়ালে রোগ দ্রুত ছড়াবে।
+    v->severity = 0.005f; // বাড়ালে আক্রান্তদের মৃত্যু বেশি হবে।
+    v->recoveryRate = 0.030f; // দিনে আক্রান্তদের ৩% সুস্থ হওয়ার মূল হার।
     v->mutationRate = 0.12f;
     v->lastMutation = TRAIT_NONE;
 }
 
-/* Return true if the virus has this trait. */
+// & দিয়ে দেখি নির্দিষ্ট বৈশিষ্ট্যের bit চালু আছে কি না।
 int virus_has_trait(const Virus *v, MutationTrait t)
 {
     return (v->activeTraits & t) != 0;
 }
 
-/* Convert a trait into text for the UI/event log. */
+// বৈশিষ্ট্যের code থেকে পর্দায় দেখানোর নাম পাই।
 const char *virus_trait_name(MutationTrait t)
 {
     switch (t) {
@@ -56,15 +55,14 @@ const char *virus_trait_name(MutationTrait t)
     }
 }
 
-/* Mutation happens between 20 and 30 days after the previous mutation. */
+// আগের mutation-এর ২০–৩০ দিন পরে virus বদলায়।
 int virus_try_mutate(Virus *v, int day)
 {
     int elapsed = day - v->lastMutationDay;
 
     if (elapsed < MUTATION_MIN_DAYS) return 0;
 
-    /* Random chance on days 20-29; guaranteed on day 30. */
-    if (elapsed < MUTATION_MAX_DAYS) {
+    if (elapsed < MUTATION_MAX_DAYS) { // ৩০ দিন হলে আর random roll নয়, mutation নিশ্চিত।
         double roll = (double)rand() / ((double)RAND_MAX + 1.0);
 
         if (roll >= v->mutationRate) return 0;
@@ -72,13 +70,12 @@ int virus_try_mutate(Virus *v, int day)
 
     MutationTrait chosen = (MutationTrait)(1 << (rand() % 8));
 
-    v->activeTraits |= chosen;
+    v->activeTraits |= chosen; // পুরোনো trait না মুছে নতুন bit চালু করি।
     v->lastMutation = chosen;
     v->lastMutationDay = day;
 
-    /* Every mutation raises spread and resistance */
-    v->infectivity *= 1.03f;
-    v->resistance += 0.05f;
+    v->infectivity *= 1.03f; // আগের infectivity-এর তুলনায় ৩% বৃদ্ধি।
+    v->resistance += 0.05f; // resistance-এ ৫ percentage point যোগ।
 
     switch (chosen) {
         case TRAIT_AIRBORNE:
@@ -108,7 +105,7 @@ int virus_try_mutate(Virus *v, int day)
     return 1;
 }
 
-/* 1.0 means full capacity; above 1.0 means overloaded. */
+// রোগীর চাহিদা / শয্যা; ১-এর বেশি হলে হাসপাতাল overloaded।
 float virus_hospital_load(const Region *r)
 {
     float beds = effective_healthcare(r) * HOSPITAL_BED_SHARE;
@@ -119,7 +116,7 @@ float virus_hospital_load(const Region *r)
     return demand / beds;
 }
 
-/* Calculate global values from regional values. */
+// সব অঞ্চলের মানুষ গুনে বিশ্বব্যাপী হার বের করি; শতাংশের সরল গড় নয়।
 void virus_refresh_totals(GameState *gs)
 {
     float population = 0.0f;
@@ -148,19 +145,20 @@ void virus_refresh_totals(GameState *gs)
         : 0.0f;
 }
 
-/* Call exactly once for each completed game day. */
+// দিনে একবার নতুন সংক্রমণ, মৃত্যু ও সুস্থ হওয়া হিসাব করি।
 void virus_update(GameState *gs)
 {
     Virus *v = &gs->virus;
     float previous[MAX_REGIONS];
 
-    /* Snapshot prevents region update order from changing the result. */
+    // একই দিনের শুরুর আক্রান্তের তথ্য রাখি; region-এর ক্রমে ফল বদলাবে না।
     for (int i = 0; i < MAX_REGIONS; i++)
         previous[i] = gs->regions[i].infected;
 
     for (int i = 0; i < MAX_REGIONS; i++) {
         Region *r = &gs->regions[i];
 
+        // সুস্থ = মোট ১ - আক্রান্ত - মৃত - vaccine-এ সুরক্ষিত।
         float healthy = clamp(
             1.0f - previous[i] - r->dead - r->vaccinated,
             0.0f, 1.0f
@@ -195,6 +193,7 @@ void virus_update(GameState *gs)
                 sourceCases += previous[j] * source->population;
         }
 
+        // অন্য অঞ্চলের জনসংখ্যা অনুযায়ী বাইরের আক্রান্তের গড় বের করি।
         float imported = sourcePopulation > 0.0f
             ? sourceCases / sourcePopulation
             : 0.0f;
@@ -209,35 +208,36 @@ void virus_update(GameState *gs)
         if (virus_has_trait(v, TRAIT_STEALTH))
             prevention = 1.0f - healthcare * 0.15f;
 
+        // স্থানীয় সংক্রমণ এবং বাইরের সংক্রমণ যোগ করে প্রতিরোধের প্রভাব ধরি।
         float exposure = v->infectivity * climate * prevention *
             (previous[i] * (1.0f - border * 0.5f)
              + mixing * imported * (1.0f - border));
 
+        // সুস্থ মানুষের চেয়ে বেশি নতুন আক্রান্ত হওয়া সম্ভব নয়।
         float newCases = clamp(exposure * healthy, 0.0f, healthy);
 
         float deathRate = v->severity * (1.0f - healthcare * 0.5f);
 
         if (virus_hospital_load(r) > 1.0f)
-            deathRate *= 2.0f;
+            deathRate *= 2.0f; // হাসপাতাল ভরে গেলে মৃত্যুর হার দ্বিগুণ।
 
         float deaths = clamp(
             previous[i] * deathRate,
             0.0f, previous[i]
         );
 
+        // একই মানুষকে একই দিনে মৃত ও সুস্থ দুই জায়গায় গোনা যাবে না।
         float recoveries = clamp(
             previous[i] * v->recoveryRate,
             0.0f, previous[i] - deaths
         );
 
         r->infected = previous[i] + newCases - deaths - recoveries;
-        r->dead += deaths;
-
-        /* Recovered people automatically rejoin the healthy remainder. */
+        r->dead += deaths; // মৃত্যু জমে; recovered মানুষ আবার সুস্থ অংশে ফেরে।
 
         if (virus_hospital_load(r) > 1.0f)
             r->overloadedDays++;
         else
-            r->overloadedDays = 0;
+            r->overloadedDays = 0; // স্বাভাবিক হলে একটানা overload-এর হিসাব নতুন করে শুরু।
     }
 }
