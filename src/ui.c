@@ -432,7 +432,8 @@ void UI_DrawGameplay(GameState *gs) {
         DrawRectangleRec(stage, fill);
         DrawText(phaseNames[i], (int)stage.x + 12, 492, 15, i == (int)gs->cure.phase ? WHITE : DARKGRAY);
     }
-    DrawText("Infected people can recover. Deaths are permanent.", 310, 531, 14, DARKGRAY);
+    DrawText("Infected can recover; deaths are permanent.", 310, 527, 12, DARKGRAY);
+    DrawText("Green <15% | Orange 15-<40% | Red 40%+ infected", 310, 544, 12, DARKGRAY);
     DrawUIPanel((Rectangle){20, 440, 260, 105}, RAYWHITE, LIGHTGRAY, 1);
     char goal[64];
     DrawText("PROTECT SURVIVORS", 35, 454, 15, DARKBLUE);
@@ -626,12 +627,13 @@ static UIAction DrawLabBody(Rectangle area, const GameState *gs) {
 static void DrawVirusBody(Rectangle area, const Virus *v) {
     float y = area.y;
 
-    Rectangle infBar = { area.x, y, area.width, 20 };
-    DrawProgressBar(infBar, v->infectivity * 100.0f, RED, LIGHTGRAY, "Infectivity");
+    // এগুলো শক্তি ও মূল দৈনিক হার; আক্রান্ত মানুষের শতাংশ নয়।
+    char buf[64];
+    snprintf(buf, sizeof(buf), "Spread strength: %.3f", v->infectivity);
+    DrawText(buf, (int)area.x, (int)y, 14, DARKBLUE);
     y += 26;
-
-    Rectangle sevBar = { area.x, y, area.width, 20 };
-    DrawProgressBar(sevBar, v->severity * 100.0f, MAROON, LIGHTGRAY, "Severity");
+    snprintf(buf, sizeof(buf), "Base deaths/day: %.2f%%", v->severity * 100);
+    DrawText(buf, (int)area.x, (int)y, 14, MAROON);
     y += 26;
 
     Rectangle infectedBar = { area.x, y, area.width, 20 };
@@ -642,7 +644,6 @@ static void DrawVirusBody(Rectangle area, const Virus *v) {
     DrawProgressBar(deadBar, v->globalDead * 100.0f, BLACK, LIGHTGRAY, "Global Deaths");
     y += 30;
 
-    char buf[64];
     snprintf(buf, sizeof(buf), "Resistance: %.0f%%", v->resistance * 100.0f);
     DrawText(buf, (int)area.x, (int)y, 14, DARKGRAY);
     y += 22;

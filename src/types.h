@@ -95,7 +95,6 @@ typedef struct {
   int   overloadedDays; // একটানা কয় দিন হাসপাতাল overloaded।
   float vaccinated; // vaccine-এ সুরক্ষিত মানুষের অংশ: ০–১।
   float healthcareCapacity; // হাসপাতালের মূল ক্ষমতার মান: ০–১।
-  float publicTrust; // event বদলায়; বর্তমানে spread formula-তে ব্যবহৃত হয় না।
   float borderControl; // সীমান্ত নিয়ন্ত্রণের শক্তি: ০–১।
   RegionState state; // অঞ্চলের সংক্রমণের অবস্থা।
   RegionClimate climate; // স্বাভাবিক, ঠান্ডা অথবা গরম আবহাওয়া।

@@ -8,7 +8,7 @@ static Event eventPool[POOL_SIZE] =
     {"Outbreak Reported", "A cluster of new cases has emerged--", 0, 0},
     {"Funding Surge",  "Emergency relief package approved -- research budget increased--", 0, 0},
     {"Mutation Watch", "Labs are monitoring the pathogen for new changes.", 0, 0},
-    {"Public Panic",  "Social media fuels mass hysteria, clinic queues double overnight--", 0, 0},
+    {"Public Panic",  "Panic reduces border control by 5 points in every region.", 0, 0},
     {"Border Lockdown", "Governments seal transit corridors to slow inter-region spread", 0, 0},
     {"Lab Breakthrough", "A promising compound has cleared preliminary safety screening--", 0, 0},
     {"Budget cuts", "Political deadlock freezes a quarter of the research allocation--", 0, 0},
@@ -63,6 +63,11 @@ void events_trigger_random(GameState *gs)
 
     gs->lastEventIndex = pick;
 
+    // Research শেষ হলে তার bonus বা progress আর বদলাব না।
+    if (gs->cure.phase >= PHASE_PRODUCTION && (pick == 5 || pick == 7 || pick == 12)) {
+        events_add(gs, eventPool[pick].title, "Research is complete; no research bonus applied.");
+        return;
+    }
     events_add(gs, eventPool[pick].title, eventPool[pick].description);
 
     switch (pick)
@@ -71,8 +76,11 @@ void events_trigger_random(GameState *gs)
             gs->cure.fundingPerTick += 2.0f;
             break;
 
-        case 5: // Lab Breakthrough: চলতি research progress বাড়ে।
+        case 5:  // Lab Breakthrough ও Medical Miracle-এর একই progress bonus।
+        case 12:
             gs->cure.researchProgress += 5.0f;
+            if (gs->cure.researchProgress > 100) gs->cure.researchProgress = 100;
+            if (pick == 12) gs->cure.rpPerTick += 0.10f;
             break;
 
         case 6: // Budget cuts: আয় কমে, কিন্তু নির্ধারিত সর্বনিম্নের নিচে নয়।
@@ -103,20 +111,14 @@ void events_trigger_random(GameState *gs)
             if (gs->cure.funding < 0.0f) gs->cure.funding = 0.0f;
             break;
 
-        case 12: // Medical Miracle: progress এবং মূল research/day বাড়ে।
-            gs->cure.researchProgress += 5.0f;
-            gs->cure.rpPerTick += 0.10f;
-            break;
-
         case 2:
         case 13:
             break;
 
-        case 3: // Trust-এর মান কমে; বর্তমানে সংক্রমণের formula-তে trust নেই।
-            for (int r = 0; r < MAX_REGIONS; r++)
-            {
-                gs->regions[r].publicTrust -= 0.05f;
-                if (gs->regions[r].publicTrust < 0.1f) gs->regions[r].publicTrust = 0.1f;
+        case 3: // Panic-এ সীমান্ত নিয়ন্ত্রণ কমে; এটি সময় শেষে নিজে থেকে ফেরে না।
+            for (int r = 0; r < MAX_REGIONS; r++) {
+                gs->regions[r].borderControl -= 0.05f;
+                if (gs->regions[r].borderControl < 0) gs->regions[r].borderControl = 0;
             }
             break;
 
