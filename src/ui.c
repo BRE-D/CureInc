@@ -453,9 +453,17 @@ void UI_DrawRegionPanel(Rectangle bounds, RegionData *region, const Region *sour
 // Return a notification accent color based on words in its title. This visual choice does not control the
 // event effect.
 // title: read-only notification title text.
-static Color EventColor(const char *title) {
-    if (strstr(title, "utat") || strstr(title, "utbreak")) return MAROON;
-    if (strstr(title, "esearch") || strstr(title, "reakthrough")) return DARKGREEN;
+static Color EventColor(const char *title)
+{
+    // Dangerous virus-related events use dark red.
+    if (strstr(title, "Mutation") || strstr(title, "Outbreak"))
+        return MAROON;
+
+    // Positive research-related events use dark green.
+    if (strstr(title, "Research") || strstr(title, "Breakthrough"))
+        return DARKGREEN;
+
+    // Other events use dark blue.
     return DARKBLUE;
 }
 
@@ -666,7 +674,7 @@ void UI_DrawGameplay(GameState *gs) {
 
     // Pointer to the actual selected region; edits from its UI copy are copied here.
     Region *sel = &gs->regions[gs->selectedRegionIndex];
-    // Temporary selected-region UI copy; counts are converted from millions to whole people.
+    // Temporary selected-region, counts are converted from millions to whole people.
     RegionData rd = {0};
     rd.name          = sel->name;
 

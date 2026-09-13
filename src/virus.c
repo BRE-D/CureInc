@@ -1,68 +1,50 @@
 #include "virus.h"
 #include <stdlib.h>
 
-// Minimum gap in game days between mutations.
+
 #define MUTATION_MIN_DAYS 20
-// Gap at which a mutation is guaranteed instead of rolling a chance.
+                                //virus cannot mutate again until at least 20 days after the prev mutation
 #define MUTATION_MAX_DAYS 30
-// Maximum bed share of original regional population, scaled by healthcare score.
+                                //mutation is guaranteed within 30 days after prev mutation
 #define HOSPITAL_BED_SHARE 0.05f
-// Fraction of infected people assumed to require a hospital bed.
+                                // maximum hospital-bed capacity is based on 5% of the original regional population,multiplied by healthcare quality.
 #define HOSPITAL_CASE_SHARE 0.10f
+                                //10% of infected people need hospital beds.
 
-
-// Return value limited to the inclusive range low..high. Used to keep fractions and calculated counts
-// inside valid bounds.
-// value: number to limit.
-// low: smallest allowed value.
-// high: largest allowed value.
-static float clamp(float value, float low, float high)
+static float clamp(float value, float low, float high)  //This function simply prevents a value from going outside a range.
 {
     if (value < low) return low;
     if (value > high) return high;
     return value;
 }
 
-
-// Return the region hospital score (0..1), including 0.002 extra capacity per local research point. Used
-// by hospital load, spread prevention, and mortality calculations.
-// r: region whose data is being examined.
-static float effective_healthcare(const Region *r)
+static float effective_healthcare(const Region *r)      //calculates the real healthcare strength of a region.
 {
-    return clamp(r->healthcareCapacity + r->cureResearch * 0.002f,
-                 0.0f, 1.0f);
+    return clamp(r->healthcareCapacity + r->cureResearch * 0.002f,0.0f, 1.0f);              //cureResearch=Local research=100$=15
 }
 
 
-// Clear the virus state and set starting spread, death, recovery, and mutation rates. Called by
-// reset_game; returns nothing.
-// v: virus data; const means read-only access.
+
 void virus_init(Virus *v)
 {
     *v = (Virus){0};
 
-    v->infectivity = 0.13f;
-    v->severity = 0.005f;
-    v->recoveryRate = 0.030f;
-    v->mutationRate = 0.12f;
-    v->lastMutation = TRAIT_NONE;
+    v->infectivity = 0.13f;         //controls infection spread
+    v->severity = 0.005f;           //the base daily death rate among infected people
+    v->recoveryRate = 0.030f;       //3% of the starting infected population recovers each game day
+    v->mutationRate = 0.12f;        //on eligible mutation days there is 12% daily chance of mutation
+    v->lastMutation = TRAIT_NONE;   //the virus hasn't acquired a mutation yet.
 }
 
 
-// Test a trait bit using bitwise AND. Return 1 if that bit is active, otherwise 0; does not change the
-// virus.
-// v: virus data; const means read-only access.
-// t: mutation flag to test or name.
-int virus_has_trait(const Virus *v, MutationTrait t)
+
+int virus_has_trait(const Virus *v, MutationTrait t)    //It checks whether a particular mutation is active using bitwise AND
 {
     return (v->activeTraits & t) != 0;
 }
 
 
-// Return a display name for one mutation flag, or "None yet" for an unknown/no flag. The returned string
-// is read-only.
-// t: mutation flag to test or name.
-const char *virus_trait_name(MutationTrait t)
+const char *virus_trait_name(MutationTrait t)   //This simply converts the mutation enum into readable text,mainly useful for displaying the mutation to the player
 {
     switch (t) {
         case TRAIT_AIRBORNE: return "Airborne";
@@ -77,11 +59,6 @@ const char *virus_trait_name(MutationTrait t)
     }
 }
 
-
-// Attempt a mutation 20..30 days after the last one; day 30 guarantees it. Keep old trait bits, apply the
-// chosen effects, and cap rates. Repeated traits are allowed. Return 1 if mutated, otherwise 0.
-// v: virus data; const means read-only access.
-// day: current game-day number.
 int virus_try_mutate(Virus *v, int day)
 {
     // Game days since the previous mutation.

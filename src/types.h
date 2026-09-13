@@ -71,49 +71,48 @@ typedef enum {
 // Bit-flag enum: each 1 << n uses a different bit, allowing several traits in one integer.
 typedef enum {
 
-  // No mutation flag.
+                  // No mutation flag.
   TRAIT_NONE = 0,
-  // Adds spread strength when selected.
+                  // Adds spread strength when selected.
   TRAIT_AIRBORNE = (1 << 0),
-  // Adds extra drug resistance when selected.
+                  // Adds extra drug resistance when selected.
   TRAIT_DRUG_RESISTANT = (1 << 1),
-  // Weakens the healthcare reduction of spread.
+                  // Weakens the healthcare system
   TRAIT_STEALTH = (1 << 2),
-  // Adds base daily mortality when selected.
+                  // Adds base daily mortality when selected.
   TRAIT_LETHAL = (1 << 3),
-  // Multiplies cross-region mixing by 1.5.
+                  // Multiplies cross-region mixing by 1.5.
   TRAIT_FAST_SPREAD = (1 << 4),
-  // Multiplies spread by 1.15 in cold regions.
+                  // Multiplies spread by 1.15 in cold regions.
   TRAIT_COLD_ADAPTED = (1 << 5),
-  // Multiplies spread by 1.15 in hot regions.
+                  // Multiplies spread by 1.15 in hot regions.
   TRAIT_HOT_ADAPTED = (1 << 6),
-  // Adds spread strength when selected; no separate incubation timer.
+                  // Adds overall spread strength when selected
   TRAIT_LONG_INCUBATION = (1 << 7)
 } MutationTrait;
 
-// Struct holding virus rates, mutation history, and calculated global outbreak fractions.
 typedef struct {
-    // Daily spreading coefficient; larger values increase new infections.
+                      // Daily spreading coefficient; larger values increase new infections.
     float infectivity;
-    // Base fraction of infected people dying per day, before healthcare effects.
+                      // Base fraction of infected people dying per day, before healthcare effects.
     float severity;
-    // Drug resistance (0..1); reduces research speed and vaccine effectiveness.
+                    // Drug resistance (0..1); reduces research speed and vaccine effectiveness.
     float resistance;
-    // Daily mutation probability on eligible days 20..29 after the last mutation.
+                    // Daily mutation probability on eligible days 20..29 after the last mutation.
     float mutationRate;
-    // Fraction of starting infected people recovering per day.
+                    // Fraction of starting infected people recovering per day.
     float recoveryRate;
 
-    // Integer bit mask holding all acquired mutation flags.
+                    // Integer bit mask holding all acquired mutation flags.
     int activeTraits;
-    // Game day of the most recent mutation; starts at zero.
+                    // Game day of the most recent mutation; starts at zero.
     int lastMutationDay;
-    // Most recently selected mutation flag.
+                    // Most recently selected mutation flag.
     MutationTrait lastMutation;
 
-    // Currently infected divided by original world population (0..1).
+                    // Currently infected divided by original world population (0..1).
     float globalInfected;
-    // Cumulative deaths divided by original world population (0..1).
+                    // Cumulative deaths divided by original world population (0..1).
     float globalDead;
 } Virus;
 

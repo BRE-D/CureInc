@@ -61,9 +61,6 @@ static void day_tick(GameState *gs) {
 }
 
 
-// Clear the previous game while keeping the chosen screen, then initialize every system and reset the UI.
-// Called when Play is clicked; returns nothing.
-// gs: shared game state; const means this function only reads it.
 static void reset_game(GameState *gs) {
     // Saved screen choice retained while all other game data is reset.
     GameScreen screen = gs->screen;
@@ -78,42 +75,49 @@ static void reset_game(GameState *gs) {
 }
 
 
-// Program entry point. Open the window, collect frame time, run complete game days, draw the current
-// screen, and handle menu actions. Close the window on exit; return 0 for normal completion.
 int main(void) {
-    srand((unsigned)time(NULL));
+
+    srand((unsigned)time(NULL));            /*Without calling srand() at the start of your program,
+                                                rand() defaults to a fixed seed of 1. This would cause
+                                                your game to generate the exact same sequence of 
+                                                "random" events, infections, or mutations every single 
+                                                time you play.
+                                            */
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Cure Inc. - Challenge");
     SetTargetFPS(60);
-    // Single shared game state; initially only the menu screen is set and other fields are zero.
     GameState state = {.screen=SCREEN_MENU};
-    // True after the Exit button asks the main loop to stop.
-    bool exitRequested = false;
-    while (!WindowShouldClose() && !exitRequested) {
-        // Real seconds since the previous rendered frame.
+                                            //  initially only the menu screen is set and other fields are zero.
+    bool exitRequested = false;             //True after the Exit button asks the main loop to stop.
+    while (!WindowShouldClose() && !exitRequested) {        //This is the main game loop.It keeps repeating while the player has not closed the window or clicked Exit.   
+                                                            //Every loop represents approximately one frame.
         float dt = GetFrameTime();
         if (state.screen == SCREEN_GAME) {
             state.dayTimer += dt * state.gameSpeed;
-            while (state.dayTimer >= state.dayLength && state.screen == SCREEN_GAME) {
-                // Keep leftover time so a slow frame does not skip any complete game days.
+            while (state.dayTimer >= state.dayLength && state.screen == SCREEN_GAME) { 
+                                                                // we Keep leftover time so a slow frame does not skip any complete game days
                 state.dayTimer -= state.dayLength;
                 state.day++;
                 day_tick(&state);
             }
-            events_update(&state, dt);
+            events_update(&state, dt);          //updates temporary event messages according to real frame time.
         }
         BeginDrawing();
         ClearBackground((Color){232, 239, 246, 255});
-        // Button request to return or apply; UI_NONE means no request.
-        UIAction action = UI_NONE;
-        if (state.screen == SCREEN_MENU) action = UI_DrawMainMenu(state.screen);
+
+        UIAction action = UI_NONE;      // UI_NONE means no request
+        if (state.screen == SCREEN_MENU) action = UI_DrawMainMenu(state.screen); 
         else if (state.screen == SCREEN_GAME || state.screen == SCREEN_PAUSED) UI_DrawGameplay(&state);
-        else action = UI_DrawEndScreen(&state);
-        if (action == UI_START_GAME) { state.screen = SCREEN_GAME; reset_game(&state); }
+        else action = UI_DrawEndScreen(&state);     //shows the Win/Lose screen.
+        if (action == UI_START_GAME)                //If Play was clicked again:
+        { 
+            state.screen = SCREEN_GAME;
+            reset_game(&state); 
+        }
         if (action == UI_MAIN_MENU) state.screen = SCREEN_MENU;
         if (action == UI_EXIT) exitRequested = true;
-        UI_DrawTransition(state.screen);
-        EndDrawing();
-    }
+        UI_DrawTransition(state.screen);      //only for the black fade animation when the actual GameScreen changes
+        EndDrawing();                        //finishes drawing that frame.
+    }                                       //Then the loop starts again.
     CloseWindow();
     return 0;
 }
