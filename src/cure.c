@@ -1,9 +1,7 @@
 #include "cure.h"
 
 
-// Clear cure data and set Discovery, full stability, $50 starting funds, $10/day income, and 0.5 base
-// research/day. Called by reset_game; returns nothing.
-// c: cure data; const means read-only access.
+//Initialize the cure state with base values
 void cure_init(CureState *c) {
     *c = (CureState){0};
     c->phase = PHASE_DISCOVERY;
@@ -21,33 +19,31 @@ void cure_init(CureState *c) {
 #define INITIAL_STOCK_GOAL 10.0f
 
 
-// Return vaccine units/day: base 1, plus 0.5 per production level and 0.2 per scientist. Simulation and UI
-// share this formula; actual production starts after Trials.
-// c: cure data; const means read-only access.
+//Returns vaccine units produced per day: Base:1.0, +0.5 per production level and +0.2 per scientist
 float cure_production_rate(const CureState *c)
 {
     return 1.0f + c->productionLevel * 0.5f + c->scientistCount * 0.2f;
 }
 
 
-// Return actual research points/day after local research, scientists, lab level, stability, and
-// resistance. Return zero after Trials; shared by simulation and UI purchase previews.
-// gs: shared game state; const means this function only reads it.
+// Return actual research points per day after local research, scientists, lab level, stability, and
+// resistance. Returns 0 when the production phase begins
 float cure_research_rate(const GameState *gs)
 {
-    // Pointer to the shared cure state; const pointers permit reading only.
+    //Returns 0 if phase is after the trials phase
     const CureState *c = &gs->cure;
     if (c->phase != PHASE_DISCOVERY && c->phase != PHASE_TRIALS)
         return 0.0f;
 
-    // Sum of local research contributions to base research points/day.
+    // Sum of local research contributions to base research points per day.
     float regionalBoost = 0.0f;
-    // i: Zero-based index used to visit each item in this loop.
+
     for (int i = 0; i < MAX_REGIONS; i++)
         regionalBoost += gs->regions[i].cureResearch * 0.008f;
 
 
-    // Add base/local research, then multiply by staff, lab, stability, and resistance effects.
+    // Add base research rate + 20% addition for each scientist + 25% addition for each lab level
+    // multiplied by stability and reduced by virus resistance upto 50%
     return (c->rpPerTick + regionalBoost)
         * (1.0f + c->scientistCount * 0.20f)
         * (1.0f + c->labLevel * 0.25f)
@@ -80,7 +76,6 @@ float cure_phase_progress(const CureState *c)
 // dtDays: elapsed game days (main passes 1).
 void cure_update(GameState *gs, float dtDays)
 {
-    // Pointer to the shared cure state; const pointers permit reading only.
     CureState *c = &gs->cure;
     if (dtDays <= 0.0f) return;
 
@@ -93,32 +88,37 @@ void cure_update(GameState *gs, float dtDays)
     if (c->effectiveness < 0.0f) c->effectiveness = 0.0f;
     if (c->effectiveness > 1.0f) c->effectiveness = 1.0f;
 
+    // For the research progression up until the production phase 
     if (c->phase == PHASE_DISCOVERY || c->phase == PHASE_TRIALS) {
         c->researchProgress += cure_research_rate(gs) * dtDays;
         if (c->researchProgress >= 100.0f) {
             c->researchProgress = 0.0f;
-            // Advance one phase and reset its research counter; research phases produce no vaccines.
+            // Advance one phase and reset its research counter up until the production phase
             c->phase++;
         }
         return;
     }
 
+    // Total stored vaccine
     c->vaccineStockpile += c->productionRate * dtDays;
 
     if (c->phase == PHASE_PRODUCTION) {
         if (c->vaccineStockpile >= INITIAL_STOCK_GOAL) {
+            // If a goal of initial stock is reached then move to the next phase
             c->phase = PHASE_DISTRIBUTION;
+            // Record of the day the production phase ends
             if (c->completionDay == 0) c->completionDay = gs->day;
         }
         return;
     }
 
+    // Don't distribute if not in distribution phase or if cure is not effective
     if (c->phase != PHASE_DISTRIBUTION || c->effectiveness <= 0.0f)
         return;
 
     // Sum of original regional populations in millions.
     float totalPop = 0.0f;
-    // i: Zero-based index used to visit each item in this loop.
+    
     for (int i = 0; i < MAX_REGIONS; i++)
         totalPop += gs->regions[i].population;
     if (totalPop <= 0.0f || c->vaccineStockpile <= 0.0f) return;
@@ -129,15 +129,15 @@ void cure_update(GameState *gs, float dtDays)
     float offeredFraction = c->vaccineStockpile * VACCINE_UNIT_SHARE;
     // Total vaccine units administered across regions, including unsuccessful doses.
     float usedUnits = 0.0f;
-    // i: Zero-based index used to visit each item in this loop.
+    
     for (int i = 0; i < MAX_REGIONS; i++) {
         // Pointer to the region currently being processed.
         Region *r = &gs->regions[i];
-        // Susceptible fraction: original population minus infected, dead, and protected fractions.
+        // Total healthy population
         float healthy = 1.0f - r->infected - r->dead - r->vaccinated;
         if (healthy < 0.0f) healthy = 0.0f;
 
-        // Fraction offered doses today, capped to susceptible people; success is applied separately.
+        // Each region gets the same fraction but if it exceeds the healthy population then equate
         float vaccinatedToday = offeredFraction;
         if (vaccinatedToday > healthy) vaccinatedToday = healthy;
 
@@ -156,7 +156,6 @@ void cure_update(GameState *gs, float dtDays)
 
 // Buy one scientist if funding covers SCIENTIST_COST and refresh production capacity. Return 1 on
 // purchase, otherwise 0. Scientists improve research and production.
-// c: cure data; const means read-only access.
 int cure_hire_scientist(CureState *c)
 {
 
